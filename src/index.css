@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-red-50: #ffe5e5;
+  --color-red-100: #ffd1d1;
+  --color-red-200: #ffb3b3;
+  --color-red-300: #ff8f8f;
+  --color-red-400: #ff6b6b;
+  --color-red-500: #ff4747; /* primary red */
+  --color-red-600: #e53935; /* darker red */
+  --color-red-700: #c62828;
+  --color-red-800: #b71c1c;
+  --color-red-900: #a51414;
+  
+  --color-white: #ffffff;
+}
+
+/* Enable class-based dark mode variant in Tailwind v4 */
+@custom-variant dark (&:where(.dark, .dark *));
