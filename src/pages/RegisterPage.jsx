@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Hash, Phone, Mail, Building, Camera, Upload, ArrowLeft, CheckCircle, Shield } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
+import { uploadProfilePhoto, validateProfilePhoto } from '../lib/profilePhotos';
 
 const DEFAULT_DEPARTMENTS = [
   'SALON MOONLIGHT',
@@ -29,7 +30,6 @@ export default function RegisterPage() {
     mobile: '',
     email: '',
     department: '',
-    role: 'employee',
   });
 
   useEffect(() => {
@@ -49,10 +49,12 @@ export default function RegisterPage() {
   function handlePhoto(e) {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Photo must be smaller than 5MB.');
+    const validationError = validateProfilePhoto(file);
+    if (validationError) {
+      setError(validationError);
       return;
     }
+    setError('');
     setPhotoFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setPhotoPreview(reader.result);
@@ -91,17 +93,7 @@ export default function RegisterPage() {
 
       // 2. Upload profile photo if provided
       if (photoFile) {
-        const ext = photoFile.name.split('.').pop();
-        const fileName = `profiles/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: uploadErr } = await supabase.storage
-          .from('profile-photos')
-          .upload(fileName, photoFile, { upsert: false });
-        if (uploadErr) {
-          console.warn('Photo upload failed, continuing without photo:', uploadErr.message);
-        } else {
-          const { data: urlData } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
-          photoUrl = urlData.publicUrl;
-        }
+        photoUrl = await uploadProfilePhoto(photoFile, `registration-${employeeId}`);
       }
 
       // 3. Insert profile into Supabase
@@ -113,7 +105,7 @@ export default function RegisterPage() {
           mobile,
           email,
           department: form.department,
-          role: form.role,
+          role: 'employee',
           employee_id: employeeId,
           profile_photo_url: photoUrl,
           status: 'active',
@@ -150,7 +142,7 @@ export default function RegisterPage() {
       setSuccess(true);
     } catch (err) {
       console.error('Registration error:', err);
-      setError('A network error occurred. Please check your connection and try again.');
+      setError(err.message || 'A network error occurred. Please check your connection and try again.');
     }
 
     setLoading(false);
@@ -271,21 +263,6 @@ export default function RegisterPage() {
                 {departments.map(d => (
                   <option key={d.id} value={d.name}>{d.name}</option>
                 ))}
-              </select>
-            </div>
-
-            {/* Role */}
-            <div className="relative">
-              <Shield size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
-              <select
-                name="role"
-                value={form.role}
-                onChange={handleChange}
-                className={`${inputClass} appearance-none`}
-              >
-                <option value="employee">Employee</option>
-                <option value="hr">HR</option>
-                <option value="admin">Admin</option>
               </select>
             </div>
 

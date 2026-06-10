@@ -5,9 +5,10 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid
 } from 'recharts';
-import { Users, UserCheck, Calendar, UtensilsCrossed, TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Users, UserCheck, Calendar, UtensilsCrossed, TrendingUp, AlertTriangle, CheckCircle, Download, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useApp } from '../../context/AppContext';
+import { downloadRows } from '../../lib/download';
 
 export default function AdminDashboard() {
   const { darkMode } = useApp();
@@ -103,6 +104,31 @@ export default function AdminDashboard() {
     </div>
   );
 
+  function getSummaryRows() {
+    return [
+      ['Section', 'Name', 'Value'],
+      ['KPI', 'Total Employees', stats.totalEmp],
+      ['KPI', 'Present Today', stats.presentToday],
+      ['KPI', 'On Leave Today', stats.onLeave],
+      ['KPI', 'Meal Orders Today', stats.mealOrders],
+      ...attendanceTrend.map(row => ['Attendance Trend', row.date, `Present: ${row.present}, Late: ${row.late}, Absent: ${row.absent}`]),
+      ...deptData.map(row => ['Staff by Department', row.name, row.value]),
+      ...leaveStats.map(row => ['Leave Types This Month', row.name, row.value]),
+      ...mealStats.map(row => ['Meal Orders Today', row.name, row.value]),
+      ...recentLeaves.map(row => [
+        'Pending Leave',
+        row.profiles?.full_name || 'Unknown',
+        `${row.leave_type} leave, ${row.start_date} to ${row.end_date}, ${row.days_count} days`,
+      ]),
+    ];
+  }
+
+  function downloadSummary(formatType) {
+    const rows = getSummaryRows();
+    const fileDate = format(new Date(), 'yyyy-MM-dd');
+    downloadRows(rows, `admin-summary-${fileDate}`, formatType);
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
@@ -111,9 +137,31 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{format(new Date(), 'EEEE, MMMM d yyyy')}</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{format(new Date(), 'EEEE, MMMM d yyyy')}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => downloadSummary('csv')}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
+              darkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <Download size={16} />
+            CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadSummary('excel')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            <FileSpreadsheet size={16} />
+            Excel
+          </button>
+        </div>
       </div>
 
       {/* KPI cards */}

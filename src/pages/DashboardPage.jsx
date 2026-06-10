@@ -2,10 +2,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
-import { Clock, Calendar, UtensilsCrossed, TrendingUp, CheckCircle, XCircle, AlertCircle, ArrowRight } from 'lucide-react';
+import { Clock, Calendar, UtensilsCrossed, TrendingUp, CheckCircle, XCircle, AlertCircle, ArrowRight, Download, FileSpreadsheet } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
+import { downloadRows } from '../lib/download';
 
 export default function DashboardPage() {
   const { profile, darkMode } = useApp();
@@ -84,6 +85,25 @@ export default function DashboardPage() {
     { name: 'Absent', value: stats.absent, color: '#ef4444' },
   ];
 
+  function downloadSummary(formatType) {
+    const fileDate = format(new Date(), 'yyyy-MM-dd');
+    const rows = [
+      ['Section', 'Name', 'Value'],
+      ['Employee', 'Name', profile?.full_name || ''],
+      ['Employee', 'Department', profile?.department || ''],
+      ['Monthly Attendance', 'Days Present', stats.present],
+      ['Monthly Attendance', 'Absences', stats.absent],
+      ['Monthly Attendance', 'Late Days', stats.late],
+      ['Monthly Attendance', 'Total Records', stats.totalDays],
+      ['Leave Balance', 'Annual Total', leaveBalance?.annual_total ?? ''],
+      ['Leave Balance', 'Annual Used', leaveBalance?.annual_used ?? ''],
+      ['Leave Balance', 'Annual Left', leaveBalance ? leaveBalance.annual_total - leaveBalance.annual_used : ''],
+      ...weekData.map(row => ['Work Hours This Week', row.day, Number(row.hours || 0).toFixed(2)]),
+      ...recentMeals.map(row => ['Recent Meal Order', row.order_date, `${row.meal_type} - ${row.status}`]),
+    ];
+    downloadRows(rows, `employee-summary-${fileDate}`, formatType);
+  }
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
@@ -93,13 +113,35 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">
-          Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, {profile?.full_name?.split(' ')[0]} 👋
-        </h1>
-        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-          {format(new Date(), 'EEEE, MMMM d, yyyy')}
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, {profile?.full_name?.split(' ')[0]}
+          </h1>
+          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+            {format(new Date(), 'EEEE, MMMM d, yyyy')}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => downloadSummary('csv')}
+            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
+              darkMode ? 'bg-gray-800 text-gray-200 hover:bg-gray-700' : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            <Download size={16} />
+            CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => downloadSummary('excel')}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 transition"
+          >
+            <FileSpreadsheet size={16} />
+            Excel
+          </button>
+        </div>
       </div>
 
       {/* Today status banner */}
@@ -121,7 +163,7 @@ export default function DashboardPage() {
             {todayAttendance?.check_in && (
               <div className={`text-xs mt-0.5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 In: {format(new Date(todayAttendance.check_in), 'hh:mm a')}
-                {todayAttendance?.check_out && ` • Out: ${format(new Date(todayAttendance.check_out), 'hh:mm a')}`}
+                {todayAttendance?.check_out && ` - Out: ${format(new Date(todayAttendance.check_out), 'hh:mm a')}`}
               </div>
             )}
           </div>
@@ -141,7 +183,7 @@ export default function DashboardPage() {
         <StatCard icon={CheckCircle} label="Days Present" value={stats.present} color="bg-green-500" subtext="This month" />
         <StatCard icon={XCircle} label="Absences" value={stats.absent} color="bg-red-500" subtext="This month" />
         <StatCard icon={AlertCircle} label="Late Days" value={stats.late} color="bg-amber-500" subtext="This month" />
-        <StatCard icon={Calendar} label="Leave Left" value={leaveBalance ? leaveBalance.annual_total - leaveBalance.annual_used : '—'} color="bg-blue-500" subtext="Annual days" />
+        <StatCard icon={Calendar} label="Leave Left" value={leaveBalance ? leaveBalance.annual_total - leaveBalance.annual_used : '-'} color="bg-blue-500" subtext="Annual days" />
       </div>
 
       {/* Charts row */}

@@ -4,6 +4,7 @@ import { Camera, Download, Edit3, Save, X, QrCode, Hash, Phone, Mail, Building, 
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
+import { uploadProfilePhoto, validateProfilePhoto } from '../lib/profilePhotos';
 
 const DEFAULT_DEPARTMENTS = [
   'SALON MOONLIGHT',
@@ -22,6 +23,7 @@ export default function ProfilePage() {
   const [photoFile, setPhotoFile] = useState(null);
   const [qrDataUrl, setQrDataUrl] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [departments, setDepartments] = useState([]);
   const qrCanvasRef = useRef(null);
 
@@ -61,35 +63,42 @@ export default function ProfilePage() {
 
   async function handleSave() {
     setSaving(true);
+    setError('');
     try {
       let photoUrl = profile.profile_photo_url;
 
       if (photoFile) {
-        const ext = photoFile.name.split('.').pop();
-        const fileName = `profiles/${profile.id}.${ext}`;
-        await supabase.storage.from('profile-photos').upload(fileName, photoFile, { upsert: true });
-        const { data } = supabase.storage.from('profile-photos').getPublicUrl(fileName);
-        photoUrl = data.publicUrl;
+        photoUrl = await uploadProfilePhoto(photoFile, profile.id);
       }
 
-      const { data: updated } = await supabase
+      const { data: updated, error: updateError } = await supabase
         .from('profiles')
         .update({ ...form, profile_photo_url: photoUrl })
         .eq('id', profile.id)
         .select()
         .single();
 
+      if (updateError) throw updateError;
       if (updated) setProfile(updated);
       setEditing(false);
       setPhotoFile(null);
       setPhotoPreview(null);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Profile photo upload failed. Please try again.');
+    }
     setSaving(false);
   }
 
   function handlePhotoChange(e) {
     const file = e.target.files[0];
     if (!file) return;
+    const validationError = validateProfilePhoto(file);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError('');
     setPhotoFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setPhotoPreview(reader.result);
@@ -137,6 +146,12 @@ export default function ProfilePage() {
             editing ? <><Save size={16} /> Save</> : <><Edit3 size={16} /> Edit</>}
         </button>
       </div>
+
+      {error && (
+        <div className="px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm border border-red-100 dark:border-red-800">
+          {error}
+        </div>
+      )}
 
       {/* Profile card */}
       <div className={card}>

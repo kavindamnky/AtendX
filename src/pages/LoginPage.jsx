@@ -7,17 +7,38 @@ import { useApp } from '../context/AppContext';
 
 
 export default function LoginPage() {
-  const { darkMode, setDarkMode, fetchProfile, signInDemo } = useApp();
+  const { darkMode, setDarkMode, signInDemo } = useApp();
   const navigate = useNavigate();
-  const [step, setStep] = useState('email'); // email | otp
+  const [loginMode, setLoginMode] = useState('email'); // email | admin
+  const [step, setStep] = useState('email'); // email | linkSent
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [canBypass, setCanBypass] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
 
-  async function handleSendOtp(e) {
+  const ADMIN_CREDENTIALS = {
+    admin: { email: 'admin@attendx.com', password: 'admin@123', label: 'Admin' },
+    hradmin: { email: 'hradmin@attendx.com', password: 'hr@admin', label: 'HRadmin' },
+  };
+
+  function isEmailDeliveryError(error) {
+    const message = error?.message?.toLowerCase() || '';
+    return (
+      message.includes('error sending confirmation email') ||
+      message.includes('error sending magic link') ||
+      message.includes('error sending email') ||
+      error?.status === 500
+    );
+  }
+
+  function getEmailRedirectTo() {
+    return `${window.location.origin}/dashboard`;
+  }
+
+  async function handleSendSignInLink(e) {
     e.preventDefault();
     setError('');
     setCanBypass(false);
@@ -25,7 +46,7 @@ export default function LoginPage() {
     const targetEmail = email.trim().toLowerCase();
 
     try {
-      // ── Step 1: Check if this email is registered in profiles ──
+      // Step 1: Check if this email is registered in profiles
       const { data: profile, error: profileErr } = await supabase
         .from('profiles')
         .select('id')
@@ -44,47 +65,72 @@ export default function LoginPage() {
         return;
       }
 
-      // ── Step 2: Email is registered — send OTP ──
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      // Step 2: Email is registered - send Supabase sign-in link
+      const { error: linkError } = await supabase.auth.signInWithOtp({
         email: targetEmail,
         options: {
-          shouldCreateUser: false, // never create new auth users from login
+          shouldCreateUser: true,
+          emailRedirectTo: getEmailRedirectTo(),
         },
       });
 
-      if (otpError) {
-        // If user not in auth yet, allow OTP with user creation this one time
-        if (
-          otpError.message?.toLowerCase().includes('user not found') ||
-          otpError.message?.toLowerCase().includes('signups not allowed') ||
-          otpError.status === 422
-        ) {
-          // Retry with shouldCreateUser: true — profile already verified above
-          const { error: retryError } = await supabase.auth.signInWithOtp({
-            email: targetEmail,
-            options: { shouldCreateUser: true },
-          });
-          if (retryError) {
-            setError(retryError.message || 'Failed to send OTP. Please try again.');
-            setCanBypass(true);
-            setLoading(false);
-            return;
-          }
-        } else {
-          setError(otpError.message || 'Failed to send OTP. Please try again.');
-          setCanBypass(true);
-          setLoading(false);
-          return;
-        }
+      if (linkError) {
+        setError(
+          isEmailDeliveryError(linkError)
+            ? 'Supabase could not send the sign-in email. Check Auth email/SMTP settings in Supabase, then try again.'
+            : linkError.message || 'Failed to send sign-in email. Please try again.'
+        );
+        setCanBypass(true);
+        setLoading(false);
+        return;
       }
 
-      setStep('otp');
+      setEmail(targetEmail);
+      setStep('linkSent');
       startResendCooldown();
     } catch (err) {
       setError('Network error. Please check your connection and try again.');
       setCanBypass(true);
     }
 
+    setLoading(false);
+  }
+
+  async function handleAdminLogin(e) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    const requestedUsername = username.trim();
+    const normalized = requestedUsername.toLowerCase();
+    const adminConfig = ADMIN_CREDENTIALS[normalized];
+
+    if (!adminConfig || password !== adminConfig.password) {
+      setError('Invalid admin username or password.');
+      setLoading(false);
+      return;
+    }
+
+    const { data: profile, error: profileErr } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('email', adminConfig.email)
+      .maybeSingle();
+
+    if (profileErr) {
+      setError('Unable to verify admin account. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    if (!profile) {
+      setError('Admin profile not found. Seed the admin profiles in Supabase before logging in.');
+      setLoading(false);
+      return;
+    }
+
+    await signInDemo(adminConfig.email);
+    navigate('/dashboard');
     setLoading(false);
   }
 
@@ -115,31 +161,6 @@ export default function LoginPage() {
     }
   }
 
-  async function handleVerifyOtp(e) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    const code = otp.join('');
-    const targetEmail = email.trim().toLowerCase();
-
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      email: targetEmail,
-      token: code,
-      type: 'email',
-    });
-
-    if (verifyError) {
-      setError(verifyError.message || 'Invalid OTP. Please try again.');
-      setLoading(false);
-      return;
-    }
-
-    // Fetch user profile and navigate
-    await fetchProfile(targetEmail);
-    navigate('/dashboard');
-    setLoading(false);
-  }
-
   function startResendCooldown() {
     setResendCooldown(60);
     const interval = setInterval(() => {
@@ -150,57 +171,32 @@ export default function LoginPage() {
     }, 1000);
   }
 
-  async function handleResendOtp() {
+  async function handleResendSignInLink() {
     if (resendCooldown > 0) return;
     setError('');
+    setCanBypass(false);
     setLoading(true);
     const targetEmail = email.trim().toLowerCase();
 
-    const { error: otpError } = await supabase.auth.signInWithOtp({
+    const { error: linkError } = await supabase.auth.signInWithOtp({
       email: targetEmail,
-      options: { shouldCreateUser: false },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: getEmailRedirectTo(),
+      },
     });
 
-    if (otpError) {
-      // Retry allowing user creation (profile already verified on first attempt)
-      const { error: retryError } = await supabase.auth.signInWithOtp({
-        email: targetEmail,
-        options: { shouldCreateUser: true },
-      });
-      if (retryError) {
-        setError(retryError.message || 'Failed to resend OTP.');
-      } else {
-        startResendCooldown();
-        setOtp(['', '', '', '', '', '']);
-      }
+    if (linkError) {
+      setError(
+        isEmailDeliveryError(linkError)
+          ? 'Supabase could not resend the sign-in email. Check Auth email/SMTP settings in Supabase, then try again.'
+          : linkError.message || 'Failed to resend sign-in email.'
+      );
+      setCanBypass(true);
     } else {
       startResendCooldown();
-      setOtp(['', '', '', '', '', '']);
     }
     setLoading(false);
-  }
-
-
-  function handleOtpChange(index, val) {
-    if (!/^\d?$/.test(val)) return;
-    const next = [...otp];
-    next[index] = val;
-    setOtp(next);
-    if (val && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
-  }
-
-  function handleOtpKeyDown(index, e) {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      document.getElementById(`otp-${index - 1}`)?.focus();
-    }
-  }
-
-  function handleOtpPaste(e) {
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 6) {
-      setOtp(pasted.split(''));
-      e.preventDefault();
-    }
   }
 
   return (
@@ -228,29 +224,58 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-500/30">
-              {step === 'email' ? <Building2 size={40} className="text-white" /> : <Shield size={40} className="text-white" />}
+              {loginMode === 'admin' ? <Shield size={40} className="text-white" /> : step === 'email' ? <Building2 size={40} className="text-white" /> : <Shield size={40} className="text-white" />}
             </div>
             <h1 className="text-2xl font-bold">
-              {step === 'email' ? 'Welcome Back' : 'Check Your Email'}
+              {loginMode === 'admin' ? 'Admin Login' : step === 'email' ? 'Welcome Back' : 'Check Your Email'}
             </h1>
             <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              {step === 'email'
+              {loginMode === 'email'
                 ? 'Sign in with your work email address'
-                : `We sent a 6-digit code to ${email}`}
+                : 'Use your admin username and password'}
             </p>
           </div>
 
-          {/* Step indicator */}
-          <div className="flex items-center gap-2 mb-8">
-            <div className="flex-1 h-1 rounded-full bg-red-500" />
-            <div className={`flex-1 h-1 rounded-full ${step === 'otp' ? 'bg-red-500' : darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <button
+              type="button"
+              onClick={() => { setLoginMode('email'); setError(''); setUsername(''); setPassword(''); }}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition ${loginMode === 'email'
+                ? 'bg-red-600 text-white'
+                : darkMode
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+            >
+              Email Login
+            </button>
+            <button
+              type="button"
+              onClick={() => { setLoginMode('admin'); setError(''); setEmail(''); }}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition ${loginMode === 'admin'
+                ? 'bg-red-600 text-white'
+                : darkMode
+                  ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'}`}
+            >
+              Admin Login
+            </button>
           </div>
+
+          {loginMode === 'email' && (
+            <>
+              {/* Step indicator */}
+              <div className="flex items-center gap-2 mb-8">
+                <div className="flex-1 h-1 rounded-full bg-red-500" />
+                <div className={`flex-1 h-1 rounded-full ${step === 'linkSent' ? 'bg-red-500' : darkMode ? 'bg-gray-700' : 'bg-gray-200'}`} />
+              </div>
+            </>
+          )}
 
           {/* Error */}
           {error && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm border border-red-100 dark:border-red-800 flex flex-col items-start gap-2">
               <div className="flex items-start gap-2">
-                <span className="mt-0.5 shrink-0">⚠️</span>
+                <span className="mt-0.5 shrink-0">!</span>
                 <span>{error}</span>
               </div>
               {canBypass && (
@@ -265,96 +290,128 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === 'email' ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
+          {loginMode === 'email' ? (
+            step === 'email' ? (
+              <form onSubmit={handleSendSignInLink} className="space-y-4">
+                <div>
+                  <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder="employee@company.com"
+                      required
+                      autoFocus
+                      className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition
+                        ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading || email.length < 5}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-red-500/20"
+                >
+                  {loading
+                    ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
+                    : <><span>Send Sign-In Link</span><ChevronRight size={18} /></>
+                  }
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-6">
+                <div className={`rounded-xl p-4 text-sm text-center ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+                  Open the email from Supabase and click the sign-in link to continue.
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => window.open('https://mail.google.com/', '_blank', 'noopener,noreferrer')}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-red-500/20"
+                >
+                  Open Email
+                </button>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendSignInLink}
+                    disabled={resendCooldown > 0 || loading}
+                    className={`text-sm flex items-center gap-1 mx-auto transition ${
+                      resendCooldown > 0 || loading
+                        ? 'text-gray-400 cursor-not-allowed'
+                        : 'text-red-500 hover:text-red-600'
+                    }`}
+                  >
+                    <RefreshCw size={14} />
+                    {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend sign-in link'}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => { setStep('email'); setError(''); setCanBypass(false); }}
+                  className="w-full text-sm text-red-500 hover:text-red-600 transition"
+                >
+                  Change email
+                </button>
+              </div>
+            )
+          ) : (
+            <form onSubmit={handleAdminLogin} className="space-y-4">
               <div>
                 <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Email Address
+                  Admin Username
                 </label>
                 <div className="relative">
-                  <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-red-500" />
                   <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="employee@company.com"
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    placeholder="Admin"
                     required
                     autoFocus
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition
+                    className={`w-full pl-4 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition
                       ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
                   />
                 </div>
               </div>
+              <div>
+                <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                    className={`w-full pl-4 pr-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition
+                      ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
+                  />
+                </div>
+              </div>
+              {/* <div className={`rounded-xl p-4 text-sm ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-50 text-gray-600'}`}>
+                Use the admin credentials:
+                <div className="mt-2 text-xs space-y-1 text-left">
+                  <div><strong>Admin:</strong> Admin / admin@123</div>
+                  <div><strong>HRadmin:</strong> HRadmin / hr@admin</div>
+                </div>
+              </div> */}
               <button
                 type="submit"
-                disabled={loading || email.length < 5}
+                disabled={loading || !username || !password}
                 className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-red-500/20"
               >
                 {loading
                   ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                  : <><span>Send OTP</span><ChevronRight size={18} /></>
+                  : 'Sign In'
                 }
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleVerifyOtp} className="space-y-6">
-              <div>
-                <label className={`block text-sm font-medium mb-4 text-center ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  Enter 6-digit OTP
-                </label>
-                <div className="flex gap-2 justify-center" onPaste={handleOtpPaste}>
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      id={`otp-${i}`}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={e => handleOtpChange(i, e.target.value)}
-                      onKeyDown={e => handleOtpKeyDown(i, e)}
-                      autoFocus={i === 0}
-                      className={`w-11 h-12 text-center text-lg font-bold rounded-xl border focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition
-                        ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading || otp.join('').length < 6}
-                className="w-full py-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition shadow-lg shadow-red-500/20"
-              >
-                {loading
-                  ? <span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full" />
-                  : 'Verify & Sign In'
-                }
-              </button>
-
-              {/* Resend OTP */}
-              <div className="text-center">
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={resendCooldown > 0 || loading}
-                  className={`text-sm flex items-center gap-1 mx-auto transition ${
-                    resendCooldown > 0 || loading
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-red-500 hover:text-red-600'
-                  }`}
-                >
-                  <RefreshCw size={14} />
-                  {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
-                </button>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => { setStep('email'); setOtp(['', '', '', '', '', '']); setError(''); }}
-                className="w-full text-sm text-red-500 hover:text-red-600 transition"
-              >
-                ← Change email
               </button>
             </form>
           )}

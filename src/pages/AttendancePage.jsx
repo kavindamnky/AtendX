@@ -37,6 +37,46 @@ export default function AttendancePage() {
     setLoading(false);
   }
 
+  async function resolveScannedEmployee(decodedText) {
+    let scanData = null;
+
+    if (decodedText?.startsWith('{')) {
+      try {
+        scanData = JSON.parse(decodedText);
+      } catch {
+        scanData = null;
+      }
+    }
+
+    if (!scanData) {
+      scanData = { rawValue: decodedText?.trim() };
+    }
+
+    let query = supabase.from('profiles').select('*').maybeSingle();
+
+    if (scanData.employee_id) {
+      query = query.eq('id', scanData.employee_id);
+    } else if (scanData.email) {
+      query = query.eq('email', scanData.email);
+    } else if (scanData.employee_code) {
+      query = query.eq('employee_id', scanData.employee_code);
+    } else if (scanData.rawValue) {
+      const value = scanData.rawValue;
+      if (value.includes('@')) {
+        query = query.eq('email', value);
+      } else if (value.length === 36 && value.includes('-')) {
+        query = query.eq('id', value);
+      } else {
+        query = query.eq('employee_id', value);
+      }
+    }
+
+    const { data, error } = await query;
+    if (error || !data) return null;
+
+    return data;
+  }
+
   async function startScanner() {
     setScanning(true);
     setScanResult(null);
@@ -47,32 +87,15 @@ export default function AttendancePage() {
         await html5Qrcode.start(
           { facingMode: 'environment' },
           { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => {
-            try {
-              let employeeData = null;
-              if (decodedText.startsWith('{')) {
-                employeeData = JSON.parse(decodedText);
-              } else {
-                employeeData = {
-                  employee_id: profile.id,
-                  full_name: profile.full_name,
-                  department: profile.department,
-                  employee_id_code: profile.employee_id,
-                };
-              }
+          async (decodedText) => {
+            stopScanner();
+            const employeeData = await resolveScannedEmployee(decodedText);
+            if (employeeData) {
               setScanResult({ data: employeeData });
-              stopScanner();
               setCheckModal({ employeeData });
-            } catch {
-              const employeeData = {
-                employee_id: profile.id,
-                full_name: profile.full_name,
-                department: profile.department,
-                employee_id_code: profile.employee_id,
-              };
-              setScanResult({ data: employeeData });
-              stopScanner();
-              setCheckModal({ employeeData });
+            } else {
+              setScanResult({ data: { full_name: 'Unknown employee', employee_id_code: decodedText } });
+              setCheckModal({ employeeData: { full_name: 'Unknown employee', department: 'Unknown', employee_id: null, employee_code: decodedText } });
             }
           },
           () => {}
@@ -81,11 +104,11 @@ export default function AttendancePage() {
         console.error('Scanner error:', err);
         // Kiosk demo mode — simulate scanning current profile
         const demoData = {
-          employee_id: profile.id,
-          name: profile.full_name,
-          department: profile.department,
-          employee_code: profile.employee_id,
-          profile_photo_url: profile.profile_photo_url,
+          employee_id: profile?.id,
+          full_name: profile?.full_name,
+          department: profile?.department,
+          employee_code: profile?.employee_id,
+          profile_photo_url: profile?.profile_photo_url,
         };
         setScanResult({ data: demoData });
         setCheckModal({ employeeData: demoData });
@@ -104,7 +127,11 @@ export default function AttendancePage() {
 
   async function handleConfirmAttendance(actionType, employeeData) {
     const now = new Date().toISOString();
-    const targetEmployeeId = employeeData?.employee_id || employeeData?.id || profile.id;
+    const targetEmployeeId = employeeData?.employee_id || employeeData?.id;
+    if (!targetEmployeeId) {
+      setCheckModal(null);
+      return;
+    }
 
     if (actionType === 'in') {
       const { data: existing } = await supabase.from('attendance')
@@ -179,7 +206,9 @@ export default function AttendancePage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Attendance</h1>
-        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Scan QR to check in or out</p>
+        <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+          Scan any employee QR code here, then confirm their details and check them in or out.
+        </p>
       </div>
 
       {/* Today card */}

@@ -5,6 +5,20 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- ---- STORAGE BUCKETS ----
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'profile-photos',
+  'profile-photos',
+  TRUE,
+  5242880,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
 -- ---- PROFILES TABLE ----
 CREATE TABLE profiles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -171,3 +185,21 @@ CREATE POLICY "meal_orders_all" ON meal_orders FOR ALL USING (true);
 
 -- Notifications: see own
 CREATE POLICY "notifications_all" ON notifications FOR ALL USING (true);
+
+-- Profile photos: public reads and browser uploads for registration/profile edits
+DROP POLICY IF EXISTS "profile_photos_read_all" ON storage.objects;
+DROP POLICY IF EXISTS "profile_photos_insert_all" ON storage.objects;
+DROP POLICY IF EXISTS "profile_photos_update_all" ON storage.objects;
+DROP POLICY IF EXISTS "profile_photos_delete_all" ON storage.objects;
+
+CREATE POLICY "profile_photos_read_all" ON storage.objects
+  FOR SELECT USING (bucket_id = 'profile-photos');
+
+CREATE POLICY "profile_photos_insert_all" ON storage.objects
+  FOR INSERT WITH CHECK (bucket_id = 'profile-photos');
+
+CREATE POLICY "profile_photos_update_all" ON storage.objects
+  FOR UPDATE USING (bucket_id = 'profile-photos') WITH CHECK (bucket_id = 'profile-photos');
+
+CREATE POLICY "profile_photos_delete_all" ON storage.objects
+  FOR DELETE USING (bucket_id = 'profile-photos');
