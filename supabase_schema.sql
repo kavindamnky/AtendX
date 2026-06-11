@@ -28,6 +28,9 @@ CREATE TABLE companies (
   plan_expires_at  TIMESTAMPTZ,
   payhere_order_id TEXT,                           -- last PayHere order reference
   is_onboarded     BOOLEAN DEFAULT FALSE,          -- set TRUE after wizard completes
+  in_time          TIME DEFAULT '09:00:00',
+  out_time         TIME DEFAULT '17:00:00',
+  color_theme      TEXT DEFAULT 'red',
   created_at       TIMESTAMPTZ DEFAULT NOW(),
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
