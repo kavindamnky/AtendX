@@ -70,9 +70,7 @@ export default function LoginPage() {
       {/* Logo — top left */}
       <div className="relative z-10 p-6">
         <Link to="/" className="inline-flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:shadow-red-500/50 transition-shadow">
-            <span className="text-white font-black text-sm">A</span>
-          </div>
+          <img src="/logo.png" className="w-8 h-8 rounded-lg object-cover shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-shadow" alt="AtendX Logo" />
           <span className="text-white font-bold text-lg tracking-tight">AtendX</span>
         </Link>
       </div>
@@ -86,9 +84,7 @@ export default function LoginPage() {
 
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-xl shadow-red-500/30">
-                <span className="text-2xl font-black text-white">A</span>
-              </div>
+              <img src="/logo.png" className="w-14 h-14 mx-auto mb-4 rounded-2xl object-cover shadow-xl shadow-red-500/20" alt="AtendX Logo" />
               <h1 className="text-2xl font-bold text-white mb-1">Welcome back</h1>
               <p className="text-sm text-gray-400">Sign in to your HR workspace</p>
             </div>

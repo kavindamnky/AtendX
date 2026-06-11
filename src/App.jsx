@@ -34,9 +34,7 @@ function Spinner() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center animate-pulse">
-          <span className="text-white font-bold text-lg">A</span>
-        </div>
+        <img src="/logo.png" className="w-12 h-12 rounded-2xl object-cover shadow-xl shadow-red-500/20 animate-pulse" alt="AtendX Logo" />
         <div className="animate-spin w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full" />
       </div>
     </div>

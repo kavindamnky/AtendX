@@ -44,9 +44,7 @@ export default function AuthCallbackPage() {
 
       <div className="relative z-10 flex flex-col items-center text-center">
         {/* Logo */}
-        <div className="w-16 h-16 mb-6 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-2xl shadow-red-500/30">
-          <span className="text-3xl font-black text-white">A</span>
-        </div>
+        <img src="/logo.png" className="w-16 h-16 mb-6 rounded-2xl object-cover shadow-2xl shadow-red-500/20" alt="AtendX Logo" />
 
         {/* Spinner */}
         <div className="mb-6">
@@ -73,9 +71,7 @@ export default function AuthCallbackPage() {
 
       {/* Brand bottom */}
       <div className="fixed bottom-6 left-0 right-0 flex items-center justify-center gap-2 opacity-30">
-        <div className="w-5 h-5 rounded-md bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center">
-          <span className="text-white font-black text-[10px]">A</span>
-        </div>
+        <img src="/logo.png" className="w-5 h-5 rounded-md object-cover" alt="AtendX Logo" />
         <span className="text-gray-400 text-xs font-medium">AtendX</span>
       </div>
     </div>

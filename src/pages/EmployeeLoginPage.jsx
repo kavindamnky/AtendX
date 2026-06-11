@@ -138,8 +138,12 @@ export default function EmployeeLoginPage() {
                 />
               </div>
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center ring-4 ring-red-900/40 shadow-xl shadow-red-500/20">
-                <Building2 size={36} className="text-white" />
+              <div className="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-red-900/40 shadow-xl">
+                <img
+                  src="/logo.png"
+                  alt="AtendX Logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
             )}
           </div>

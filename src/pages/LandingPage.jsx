@@ -75,9 +75,7 @@ function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/30 group-hover:shadow-red-500/50 transition-shadow">
-              <span className="text-white font-black text-sm">A</span>
-            </div>
+            <img src="/logo.png" className="w-8 h-8 rounded-lg object-cover shadow-lg shadow-red-500/20 group-hover:shadow-red-500/40 transition-shadow" alt="AtendX Logo" />
             <span className="text-white font-bold text-lg tracking-tight">AtendX</span>
           </Link>
 
@@ -677,9 +675,7 @@ function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/30">
-                <span className="text-white font-black text-sm">A</span>
-              </div>
+              <img src="/logo.png" className="w-8 h-8 rounded-lg object-cover shadow-lg shadow-red-500/20" alt="AtendX Logo" />
               <span className="text-white font-bold text-lg tracking-tight">AtendX</span>
             </Link>
             <p className="text-sm text-gray-500 leading-relaxed max-w-xs">

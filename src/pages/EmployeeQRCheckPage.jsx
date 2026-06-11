@@ -169,8 +169,20 @@ export default function EmployeeQRCheckPage() {
       <div className="min-h-screen hero-bg flex flex-col items-center justify-center px-4">
         <div className="hero-grid fixed inset-0 opacity-20 pointer-events-none" />
         <div className="glass rounded-3xl p-8 max-w-sm w-full text-center relative z-10">
-          <div className="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/30 flex items-center justify-center mx-auto mb-6">
-            <Building2 size={32} className="text-red-500" />
+          <div className="flex justify-center mb-6">
+            {company.logo_url ? (
+              <img
+                src={company.logo_url}
+                alt={company.name}
+                className="w-16 h-16 rounded-2xl object-cover ring-4 ring-red-950/40 shadow-xl"
+              />
+            ) : (
+              <img
+                src="/logo.png"
+                alt="AtendX Logo"
+                className="w-16 h-16 rounded-2xl object-cover ring-4 ring-red-950/40 shadow-xl shadow-red-500/20"
+              />
+            )}
           </div>
           <h1 className="text-xl font-bold text-white mb-2">{company.name}</h1>
           <p className="text-gray-400 text-sm mb-6">
@@ -265,9 +277,11 @@ export default function EmployeeQRCheckPage() {
                 className="w-16 h-16 rounded-2xl object-cover ring-4 ring-red-950/40 shadow-xl"
               />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center ring-4 ring-red-950/40 shadow-xl shadow-red-500/20">
-                <Building2 size={28} className="text-white" />
-              </div>
+              <img
+                src="/logo.png"
+                alt="AtendX Logo"
+                className="w-16 h-16 rounded-2xl object-cover ring-4 ring-red-950/40 shadow-xl shadow-red-500/20"
+              />
             )}
           </div>
           <h1 className="text-2xl font-bold text-white leading-tight">{company.name}</h1>

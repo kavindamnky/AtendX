@@ -84,9 +84,11 @@ export default function Layout({ children }) {
                 className="w-9 h-9 rounded-xl object-cover shadow-lg shadow-red-500/20 shrink-0"
               />
             ) : (
-              <div className="w-9 h-9 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/30 shrink-0 text-white font-bold text-base">
-                {company?.name?.charAt(0)?.toUpperCase() || <Building2 size={18} />}
-              </div>
+              <img
+                src="/logo.png"
+                alt="AtendX Logo"
+                className="w-9 h-9 rounded-xl object-cover shadow-lg shadow-red-500/20 shrink-0"
+              />
             )}
 
             {/* Company name + plan badge */}
