@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, AlertCircle, CheckCircle2, Loader2, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
@@ -47,6 +47,7 @@ function StepIndicator() {
 
 // ─── SIGNUP PAGE ──────────────────────────────────────────────────────────────
 export default function SignUpPage() {
+  const navigate = useNavigate();
   const { signInWithGoogle, signUpWithPassword } = useApp();
 
   const [email, setEmail] = useState('');
@@ -92,8 +93,12 @@ export default function SignUpPage() {
 
     setLoadingEmail(true);
     try {
-      await signUpWithPassword(trimmedEmail, password);
-      setVerifyState(true);
+      const data = await signUpWithPassword(trimmedEmail, password);
+      if (data?.session) {
+        navigate('/onboarding');
+      } else {
+        setVerifyState(true);
+      }
     } catch (err) {
       setError(err.message || 'Sign-up failed. Please try again.');
     } finally {
