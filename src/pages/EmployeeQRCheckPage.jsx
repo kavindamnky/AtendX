@@ -211,6 +211,30 @@ export default function EmployeeQRCheckPage() {
     );
   }
 
+  // 3b. Profile not found
+  if (!profile) {
+    return (
+      <div className="min-h-screen hero-bg flex flex-col items-center justify-center px-4">
+        <div className="hero-grid fixed inset-0 opacity-20 pointer-events-none" />
+        <div className="glass rounded-3xl p-8 max-w-sm w-full text-center relative z-10 border border-red-900/40">
+          <div className="w-16 h-16 rounded-2xl bg-red-900/40 border border-red-800 flex items-center justify-center mx-auto mb-6">
+            <AlertCircle size={32} className="text-red-400" />
+          </div>
+          <h1 className="text-xl font-bold text-white mb-2">Profile Not Found</h1>
+          <p className="text-gray-400 text-sm mb-6">
+            No employee profile was found matching your account email ({user.email}). Please contact your HR manager.
+          </p>
+          <button
+            onClick={async () => { await supabase.auth.signOut(); navigate(`/company/${slug}/login`); }}
+            className="w-full py-3 bg-red-650 hover:bg-red-750 text-white font-bold rounded-xl text-sm transition"
+          >
+            Sign Out & Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // 4. Checking in/out loading state
   if (loadingRecord) {
     return (
