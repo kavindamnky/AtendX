@@ -1,19 +1,200 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/* ── Brand color overrides ───────────────────────────────────────────────── */
 @theme {
-  --color-red-50: #ffe5e5;
-  --color-red-100: #ffd1d1;
-  --color-red-200: #ffb3b3;
-  --color-red-300: #ff8f8f;
+  --color-red-50:  #fff1f1;
+  --color-red-100: #ffe1e1;
+  --color-red-200: #ffc7c7;
+  --color-red-300: #ff9f9f;
   --color-red-400: #ff6b6b;
-  --color-red-500: #ff4747; /* primary red */
-  --color-red-600: #e53935; /* darker red */
-  --color-red-700: #c62828;
-  --color-red-800: #b71c1c;
-  --color-red-900: #a51414;
-  
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+  --color-red-900: #7f1d1d;
+  --color-red-950: #450a0a;
   --color-white: #ffffff;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-/* Enable class-based dark mode variant in Tailwind v4 */
+/* ── Enable class-based dark mode ────────────────────────────────────────── */
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* ── Base reset ──────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+}
+
+/* ── Premium landing page background ────────────────────────────────────── */
+.hero-bg {
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(220, 38, 38, 0.25) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 20%, rgba(185, 28, 28, 0.12) 0%, transparent 50%),
+              #09090b;
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ── Glassmorphism card ──────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-light {
+  background: rgba(255, 255, 255, 0.80);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ── Gradient text ───────────────────────────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 40%, #f97316 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-white {
+  background: linear-gradient(135deg, #ffffff 0%, #e5e7eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Glow effects ────────────────────────────────────────────────────────── */
+.glow-red {
+  box-shadow: 0 0 40px rgba(220, 38, 38, 0.35), 0 0 80px rgba(220, 38, 38, 0.12);
+}
+
+.glow-red-sm {
+  box-shadow: 0 4px 24px rgba(220, 38, 38, 0.40);
+}
+
+.glow-card {
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15), 0 8px 32px rgba(220, 38, 38, 0.08);
+}
+
+/* ── Animated gradient button ────────────────────────────────────────────── */
+.btn-gradient {
+  background: linear-gradient(135deg, #dc2626, #b91c1c, #dc2626);
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease infinite;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.btn-gradient:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.btn-gradient:active {
+  transform: translateY(0);
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ── Floating animation ──────────────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-12px); }
+}
+
+.float { animation: float 4s ease-in-out infinite; }
+
+/* ── Fade-in-up animation ────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in-up { animation: fadeInUp 0.6s ease-out forwards; }
+.fade-in-up-1 { animation: fadeInUp 0.6s 0.1s ease-out both; }
+.fade-in-up-2 { animation: fadeInUp 0.6s 0.2s ease-out both; }
+.fade-in-up-3 { animation: fadeInUp 0.6s 0.3s ease-out both; }
+.fade-in-up-4 { animation: fadeInUp 0.6s 0.4s ease-out both; }
+
+/* ── Scale-in animation ──────────────────────────────────────────────────── */
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.scale-in { animation: scaleIn 0.4s ease-out forwards; }
+
+/* ── Pricing card hover ──────────────────────────────────────────────────── */
+.pricing-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.pricing-card:hover {
+  transform: translateY(-6px);
+}
+.pricing-card.featured {
+  background: linear-gradient(145deg, rgba(220,38,38,0.12), rgba(185,28,28,0.06));
+  border-color: rgba(220,38,38,0.4) !important;
+}
+
+/* ── Sidebar active indicator ────────────────────────────────────────────── */
+.nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  background: #dc2626;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ── Scrollbar styling ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(156,163,175,0.4); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(156,163,175,0.7); }
+
+/* ── Input autofill fix (dark mode) ─────────────────────────────────────── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px #1f2937 inset;
+  -webkit-text-fill-color: #ffffff;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* ── Plan badge pulse for free plan ─────────────────────────────────────── */
+@keyframes pulseBadge {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.pulse-badge { animation: pulseBadge 2s ease-in-out infinite; }
+
+/* ── Onboarding step connector ───────────────────────────────────────────── */
+.step-connector {
+  background: linear-gradient(90deg, #dc2626, transparent);
+}
+
+/* ── Stats counter number ────────────────────────────────────────────────── */
+.stat-number {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}

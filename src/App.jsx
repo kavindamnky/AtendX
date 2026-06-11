@@ -1,94 +1,120 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
-// One-time cleanup: remove all legacy demo/localStorage keys
-const DEMO_KEYS = ['demo_profiles', 'demo_leave_balances', 'demo_attendance', 'demo_leaves', 'demo_meals', 'devOtp'];
-DEMO_KEYS.forEach(k => localStorage.removeItem(k));
-
+// src/App.jsx
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
 import Layout from './components/shared/Layout';
+
+// Pages — public
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import SignUpPage from './pages/SignUpPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
+import EmployeeLoginPage from './pages/EmployeeLoginPage';
+import EmployeeQRCheckPage from './pages/EmployeeQRCheckPage';
+
+// Pages — onboarding
+import OnboardingPage from './pages/OnboardingPage';
+
+// Pages — employee/shared
 import DashboardPage from './pages/DashboardPage';
 import AttendancePage from './pages/AttendancePage';
 import LeavesPage from './pages/LeavesPage';
 import MealsPage from './pages/MealsPage';
 import ProfilePage from './pages/ProfilePage';
+
+// Pages — admin
 import AdminDashboard from './pages/admin/AdminDashboard';
 import EmployeesPage from './pages/admin/EmployeesPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import BillingPage from './pages/admin/BillingPage';
+import AdminMealsPage from './pages/admin/AdminMealsPage';
 
-function PrivateRoute({ children }) {
-  const { user, loading } = useApp();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
+// ── Loading spinner ───────────────────────────────────────────────────────────
+function Spinner() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center animate-pulse">
+          <span className="text-white font-bold text-lg">A</span>
+        </div>
+        <div className="animate-spin w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full" />
       </div>
-    );
-  }
+    </div>
+  );
+}
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
+// ── Guard: requires auth + completed company onboarding ───────────────────────
+function PrivateRoute({ children }) {
+  const { user, company, loading } = useApp();
+  if (loading) return <Spinner />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!company?.is_onboarded) return <Navigate to="/onboarding" replace />;
   return <Layout>{children}</Layout>;
 }
 
+// ── Guard: requires auth but NO company yet (for onboarding) ──────────────────
+function OnboardingRoute({ children }) {
+  const { user, company, loading } = useApp();
+  if (loading) return <Spinner />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (company?.is_onboarded) return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
+// ── Guard: requires admin/owner role ─────────────────────────────────────────
 function AdminRoute({ children }) {
-  const { user, loading, isAdmin } = useApp();
+  const { user, company, isAdmin, loading } = useApp();
+  if (loading) return <Spinner />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!company?.is_onboarded) return <Navigate to="/onboarding" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  return <Layout>{children}</Layout>;
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (!isAdmin) {
+// ── Public route: redirect logged-in users away ───────────────────────────────
+function PublicRoute({ children }) {
+  const { user, company, loading } = useApp();
+  if (loading) return <Spinner />;
+  if (user) {
+    if (!company?.is_onboarded) return <Navigate to="/onboarding" replace />;
     return <Navigate to="/dashboard" replace />;
   }
-
-  return <Layout>{children}</Layout>;
+  return <>{children}</>;
 }
 
+// ── Route tree ────────────────────────────────────────────────────────────────
 function AppRoutes() {
-  const { user, loading } = useApp();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="animate-spin w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
-      <Route path="/register" element={user ? <Navigate to="/dashboard" replace /> : <RegisterPage />} />
-      
-      <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-      <Route path="/attendance" element={<PrivateRoute><AttendancePage /></PrivateRoute>} />
-      <Route path="/leaves" element={<PrivateRoute><LeavesPage /></PrivateRoute>} />
-      <Route path="/meals" element={<PrivateRoute><MealsPage /></PrivateRoute>} />
-      <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-      
-      {/* Admin routes */}
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/employees" element={<AdminRoute><EmployeesPage /></AdminRoute>} />
-      
-      {/* Fallback stubs for missing admin sub-routes to avoid broken links */}
-      <Route path="/admin/leaves" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/meals" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin/settings" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      {/* Public */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+      <Route path="/signup" element={<PublicRoute><SignUpPage /></PublicRoute>} />
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-      <Route path="*" element={<Navigate to={user ? "/dashboard" : "/login"} replace />} />
+      {/* Company-specific employee login & QR scan redirect landing */}
+      <Route path="/company/:slug/login" element={<EmployeeLoginPage />} />
+      <Route path="/company/:slug/check" element={<EmployeeQRCheckPage />} />
+
+      {/* Onboarding (auth required, no company yet) */}
+      <Route path="/onboarding" element={<OnboardingRoute><OnboardingPage /></OnboardingRoute>} />
+
+      {/* Employee / shared pages */}
+      <Route path="/dashboard"  element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+      <Route path="/attendance" element={<PrivateRoute><AttendancePage /></PrivateRoute>} />
+      <Route path="/leaves"     element={<PrivateRoute><LeavesPage /></PrivateRoute>} />
+      <Route path="/meals"      element={<PrivateRoute><MealsPage /></PrivateRoute>} />
+      <Route path="/profile"    element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+
+      {/* Admin only */}
+      <Route path="/admin"              element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin/employees"    element={<AdminRoute><EmployeesPage /></AdminRoute>} />
+      <Route path="/admin/meals"        element={<AdminRoute><AdminMealsPage /></AdminRoute>} />
+      <Route path="/admin/settings"     element={<AdminRoute><SettingsPage /></AdminRoute>} />
+      <Route path="/admin/billing"      element={<AdminRoute><BillingPage /></AdminRoute>} />
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -1,14 +1,14 @@
 // src/pages/AttendancePage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
-import { QrCode, CheckCircle, XCircle, Clock, ChevronDown, Calendar } from 'lucide-react';
+import { QrCode, CheckCircle, XCircle, Clock, Calendar } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import QRCheckModal from '../components/attendance/QRCheckModal';
 
 export default function AttendancePage() {
-  const { profile, darkMode } = useApp();
+  const { profile, company, darkMode } = useApp();
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [checkModal, setCheckModal] = useState(null); // { type: 'in'|'out', data }
@@ -21,14 +21,15 @@ export default function AttendancePage() {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   useEffect(() => {
-    if (profile) loadRecords();
+    if (profile && company) loadRecords();
     return () => stopScanner();
-  }, [profile]);
+  }, [profile, company]);
 
   async function loadRecords() {
     const { data } = await supabase
       .from('attendance')
       .select('*')
+      .eq('company_id', company.id)
       .eq('employee_id', profile.id)
       .order('date', { ascending: false })
       .limit(30);
@@ -52,7 +53,11 @@ export default function AttendancePage() {
       scanData = { rawValue: decodedText?.trim() };
     }
 
-    let query = supabase.from('profiles').select('*').maybeSingle();
+    let query = supabase
+      .from('profiles')
+      .select('*')
+      .eq('company_id', company.id)
+      .maybeSingle();
 
     if (scanData.employee_id) {
       query = query.eq('id', scanData.employee_id);
@@ -128,14 +133,16 @@ export default function AttendancePage() {
   async function handleConfirmAttendance(actionType, employeeData) {
     const now = new Date().toISOString();
     const targetEmployeeId = employeeData?.employee_id || employeeData?.id;
-    if (!targetEmployeeId) {
+    if (!targetEmployeeId || !company) {
       setCheckModal(null);
       return;
     }
 
     if (actionType === 'in') {
-      const { data: existing } = await supabase.from('attendance')
+      const { data: existing } = await supabase
+        .from('attendance')
         .select('*')
+        .eq('company_id', company.id)
         .eq('employee_id', targetEmployeeId)
         .eq('date', today)
         .maybeSingle();
@@ -149,6 +156,7 @@ export default function AttendancePage() {
         err = error;
       } else {
         const { error } = await supabase.from('attendance').insert({
+          company_id: company.id,
           employee_id: targetEmployeeId,
           date: today,
           check_in: now,
@@ -162,8 +170,10 @@ export default function AttendancePage() {
         loadRecords();
       }
     } else {
-      const { data: existing } = await supabase.from('attendance')
+      const { data: existing } = await supabase
+        .from('attendance')
         .select('*')
+        .eq('company_id', company.id)
         .eq('employee_id', targetEmployeeId)
         .eq('date', today)
         .maybeSingle();
@@ -179,6 +189,7 @@ export default function AttendancePage() {
         }).eq('id', existing.id);
       } else {
         await supabase.from('attendance').insert({
+          company_id: company.id,
           employee_id: targetEmployeeId,
           date: today,
           check_out: now,

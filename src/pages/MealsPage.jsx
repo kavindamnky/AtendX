@@ -1,7 +1,7 @@
 // src/pages/MealsPage.jsx
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { ShoppingCart, Plus, Minus, UtensilsCrossed, Check, Trash2 } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, UtensilsCrossed, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 
@@ -9,7 +9,7 @@ const MEAL_TYPES = ['breakfast', 'lunch', 'dinner'];
 const MEAL_ICONS = { breakfast: '🌅', lunch: '☀️', dinner: '🌙' };
 
 export default function MealsPage() {
-  const { profile, darkMode } = useApp();
+  const { profile, company, darkMode } = useApp();
   const [activeTab, setActiveTab] = useState('breakfast');
   const [menu, setMenu] = useState([]);
   const [cart, setCart] = useState({});
@@ -20,17 +20,28 @@ export default function MealsPage() {
   const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    if (profile) {
+    if (profile && company) {
       loadData();
     }
-  }, [profile]);
+  }, [profile, company]);
 
   async function loadData() {
-    if (!profile) return;
+    if (!profile || !company) return;
     const [menuRes, ordersRes] = await Promise.all([
-      supabase.from('meal_menu').select('*').eq('is_available', true).order('category'),
-      supabase.from('meal_orders').select('*').eq('employee_id', profile.id)
-        .order('created_at', { ascending: false }).limit(10),
+      supabase
+        .from('meal_menu')
+        .select('*')
+        .eq('company_id', company.id)
+        .eq('is_available', true)
+        .order('category'),
+
+      supabase
+        .from('meal_orders')
+        .select('*')
+        .eq('company_id', company.id)
+        .eq('employee_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(10),
     ]);
     setMenu(menuRes.data || []);
     setOrders(ordersRes.data || []);
@@ -61,11 +72,12 @@ export default function MealsPage() {
   const cartCount = cartItems.reduce((sum, i) => sum + i.qty, 0);
 
   async function placeOrder() {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || !company) return;
     setOrdering(true);
 
     const today = format(new Date(), 'yyyy-MM-dd');
     const { error } = await supabase.from('meal_orders').insert({
+      company_id: company.id,
       employee_id: profile.id,
       meal_type: activeTab,
       items: cartItems.map(i => ({ id: i.id, name: i.name, qty: i.qty, price: i.price })),

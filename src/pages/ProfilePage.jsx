@@ -1,6 +1,9 @@
 // src/pages/ProfilePage.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Camera, Download, Edit3, Save, X, QrCode, Hash, Phone, Mail, Building, User, Calendar, Shield } from 'lucide-react';
+import {
+  Camera, Download, Edit3, Save, QrCode, Hash, Phone, Mail,
+  Building, User, Calendar, Shield, Copy, Check, Link2, ExternalLink,
+} from 'lucide-react';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
@@ -12,11 +15,11 @@ const DEFAULT_DEPARTMENTS = [
   'MALSHAN HOLDINGS',
   'MALSHAN RENT A CAR',
   'NINDUWARA AUTO SERVICE',
-  'ONE SEVEN RENT A CAR'
+  'ONE SEVEN RENT A CAR',
 ];
 
 export default function ProfilePage() {
-  const { profile, setProfile, darkMode } = useApp();
+  const { profile, setProfile, company, darkMode, planConfig, plan } = useApp();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({});
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -25,7 +28,12 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [departments, setDepartments] = useState([]);
+  const [copied, setCopied] = useState(false);
   const qrCanvasRef = useRef(null);
+
+  const loginUrl = company
+    ? `${window.location.origin}/company/${company.slug}/login`
+    : '';
 
   useEffect(() => {
     if (profile) {
@@ -38,14 +46,30 @@ export default function ProfilePage() {
       });
       generateQR();
     }
-    supabase.from('departments').select('*').then(({ data }) => {
-      if (data && data.length > 0) {
-        setDepartments(data);
-      } else {
-        setDepartments(DEFAULT_DEPARTMENTS.map((name, index) => ({ id: index.toString(), name })));
-      }
-    });
-  }, [profile]);
+
+    // Load departments scoped to company
+    if (company) {
+      supabase
+        .from('departments')
+        .select('*')
+        .eq('company_id', company.id)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            setDepartments(data);
+          } else {
+            setDepartments(DEFAULT_DEPARTMENTS.map((name, index) => ({ id: index.toString(), name })));
+          }
+        });
+    } else {
+      supabase.from('departments').select('*').then(({ data }) => {
+        if (data && data.length > 0) {
+          setDepartments(data);
+        } else {
+          setDepartments(DEFAULT_DEPARTMENTS.map((name, index) => ({ id: index.toString(), name })));
+        }
+      });
+    }
+  }, [profile, company]);
 
   async function generateQR() {
     if (!profile) return;
@@ -113,6 +137,17 @@ export default function ProfilePage() {
     a.click();
   }
 
+  async function copyLoginUrl() {
+    if (!loginUrl) return;
+    try {
+      await navigator.clipboard.writeText(loginUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback
+    }
+  }
+
   const card = `rounded-2xl p-5 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-100 shadow-sm'}`;
   const inputClass = `w-full px-4 py-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition
     ${darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`;
@@ -134,7 +169,7 @@ export default function ProfilePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">My Profile</h1>
-          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Manage your account & QR code</p>
+          <p className={`text-sm mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Manage your account &amp; QR code</p>
         </div>
         <button
           onClick={() => editing ? handleSave() : setEditing(true)}
@@ -197,7 +232,19 @@ export default function ProfilePage() {
               <span className={`text-xs px-2 py-0.5 rounded-full ${profile?.status === 'active' ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-600'}`}>
                 {profile?.status}
               </span>
+              {/* Company plan badge */}
+              {plan && planConfig && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${planConfig.badge}`}>
+                  {planConfig.label}
+                </span>
+              )}
             </div>
+            {/* Company name */}
+            {company && (
+              <p className={`text-xs mt-1 font-medium ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                🏢 {company.name}
+              </p>
+            )}
             <p className={`text-sm mt-1 font-mono ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>{profile?.employee_id}</p>
           </div>
         </div>
@@ -244,6 +291,42 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Employee Login URL card */}
+      {company && (
+        <div className={card}>
+          <h2 className="font-semibold mb-1 flex items-center gap-2">
+            <Link2 size={16} className="text-red-500" />
+            Employee Login Portal
+          </h2>
+          <p className={`text-xs mb-4 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            Share this URL with employees to log in to {company.name}
+          </p>
+          <div className={`flex items-center gap-2 p-3 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+            <p className={`flex-1 text-xs font-mono truncate ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              {loginUrl}
+            </p>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={copyLoginUrl}
+                title="Copy URL"
+                className={`p-1.5 rounded-lg transition ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+              >
+                {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+              </button>
+              <a
+                href={loginUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open in new tab"
+                className={`p-1.5 rounded-lg transition ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+              >
+                <ExternalLink size={14} className="text-gray-400" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QR Code card */}
       <div className={card}>

@@ -1,7 +1,7 @@
 // src/pages/LeavesPage.jsx
 import React, { useState, useEffect } from 'react';
 import { format, differenceInBusinessDays, parseISO } from 'date-fns';
-import { Plus, Calendar, CheckCircle, XCircle, Clock, ChevronDown } from 'lucide-react';
+import { Plus, Calendar, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 
@@ -14,7 +14,7 @@ const STATUS_COLORS = {
 };
 
 export default function LeavesPage() {
-  const { profile, darkMode } = useApp();
+  const { profile, company, darkMode } = useApp();
   const [leaves, setLeaves] = useState([]);
   const [balance, setBalance] = useState(null);
   const [activeEmployees, setActiveEmployees] = useState([]);
@@ -31,18 +31,36 @@ export default function LeavesPage() {
   });
 
   useEffect(() => {
-    if (profile) loadData();
-  }, [profile]);
+    if (profile && company) loadData();
+  }, [profile, company]);
 
   async function loadData() {
     const [leavesRes, balRes, empRes] = await Promise.all([
-      supabase.from('leaves').select('*').eq('employee_id', profile.id).order('created_at', { ascending: false }),
-      supabase.from('leave_balance').select('*').eq('employee_id', profile.id).eq('year', new Date().getFullYear()).single(),
-      supabase.from('profiles').select('id, full_name').eq('status', 'active'),
+      supabase
+        .from('leaves')
+        .select('*')
+        .eq('company_id', company.id)
+        .eq('employee_id', profile.id)
+        .order('created_at', { ascending: false }),
+
+      supabase
+        .from('leave_balance')
+        .select('*')
+        .eq('company_id', company.id)
+        .eq('employee_id', profile.id)
+        .eq('year', new Date().getFullYear())
+        .single(),
+
+      supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('company_id', company.id)
+        .eq('status', 'active'),
     ]);
+
     setLeaves(leavesRes.data || []);
     setBalance(balRes.data);
-    // Exclude current logged in user so they can't cover themselves
+    // Exclude current logged-in user so they can't cover themselves
     setActiveEmployees((empRes.data || []).filter(e => e.id !== profile.id));
     setLoading(false);
   }
@@ -68,6 +86,7 @@ export default function LeavesPage() {
     }
 
     const payload = {
+      company_id: company.id,
       employee_id: profile.id,
       leave_type: form.leave_type,
       start_date: form.start_date,
@@ -91,6 +110,7 @@ export default function LeavesPage() {
           : form.reason;
 
         const fallbackPayload = {
+          company_id: company.id,
           employee_id: profile.id,
           leave_type: form.leave_type,
           start_date: form.start_date,
@@ -119,7 +139,7 @@ export default function LeavesPage() {
   }
 
   async function cancelLeave(id) {
-    await supabase.from('leaves').update({ status: 'cancelled' }).eq('id', id);
+    await supabase.from('leaves').update({ status: 'cancelled' }).eq('id', id).eq('company_id', company.id);
     loadData();
   }
 
@@ -200,7 +220,7 @@ export default function LeavesPage() {
                   onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))} required className={inputClass} />
               </div>
             </div>
-             <div>
+            <div>
               <label className={`block text-xs font-medium mb-1.5 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Covering Person</label>
               <select
                 value={form.covering_person_id}
@@ -256,7 +276,7 @@ export default function LeavesPage() {
                         {format(parseISO(l.start_date), 'MMM d')} – {format(parseISO(l.end_date), 'MMM d, yyyy')} • {l.days_count} day{l.days_count !== 1 ? 's' : ''}
                       </p>
                       {coveringPerson && (
-                        <p className={`text-xs mt-1 font-semibold text-red-600 dark:text-red-400`}>
+                        <p className="text-xs mt-1 font-semibold text-red-600 dark:text-red-400">
                           Covering: {coveringPerson.full_name}
                         </p>
                       )}
@@ -278,7 +298,7 @@ export default function LeavesPage() {
 
 function BalanceCard({ label, total, used, color, darkMode }) {
   const remaining = total - used;
-  const pct = (used / total) * 100;
+  const pct = total > 0 ? (used / total) * 100 : 0;
   const colorMap = {
     blue: { bar: 'bg-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-500' },
     amber: { bar: 'bg-amber-500', bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-500' },
