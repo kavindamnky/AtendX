@@ -212,7 +212,7 @@ function Hero() {
     <section className="relative hero-bg hero-grid min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center overflow-hidden">
       {/* Plasma background */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
-        <Plasma color="#ef4444" speed={1.0} scale={1.2} opacity={0.65} mouseInteractive={true} />
+        <Plasma color="#ff2b2b" speed={1.0} scale={1.2} opacity={0.65} mouseInteractive={true} />
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center">

@@ -140,7 +140,7 @@ export default function AdminDashboard() {
   }
 
   const card          = `rounded-2xl p-5 ${darkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-100 shadow-sm'}`;
-  const PIE_COLORS    = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
+  const PIE_COLORS    = ['#ff2b2b', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'];
   const tooltipStyle  = { background: darkMode ? '#1f2937' : '#fff', border: 'none', borderRadius: 12, fontSize: 12 };
   const axisStyle     = { fontSize: 11, fill: darkMode ? '#6b7280' : '#9ca3af' };
 
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Bar dataKey="present" fill="#22c55e" radius={[4,4,0,0]} name="Present" />
             <Bar dataKey="late"    fill="#f59e0b" radius={[4,4,0,0]} name="Late" />
-            <Bar dataKey="absent"  fill="#ef4444" radius={[4,4,0,0]} name="Absent" />
+            <Bar dataKey="absent"  fill="#ff2b2b" radius={[4,4,0,0]} name="Absent" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
               <XAxis type="number" tick={axisStyle} axisLine={false} tickLine={false} />
               <YAxis dataKey="name" type="category" tick={axisStyle} axisLine={false} tickLine={false} width={70} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="value" fill="#ef4444" radius={[0,4,4,0]} />
+              <Bar dataKey="value" fill="#ff2b2b" radius={[0,4,4,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
             <PieChart>
               <Pie data={mealStats} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={4} dataKey="value">
                 <Cell fill="#f97316" />
-                <Cell fill="#ef4444" />
+                <Cell fill="#ff2b2b" />
                 <Cell fill="#8b5cf6" />
               </Pie>
               <Tooltip contentStyle={tooltipStyle} />

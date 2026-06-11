@@ -15,7 +15,7 @@ import { useApp } from '../context/AppContext';
 import { downloadRows } from '../lib/download';
 import { Html5Qrcode } from 'html5-qrcode';
 
-const PIE_COLORS = { present: '#22c55e', late: '#f59e0b', absent: '#ef4444' };
+const PIE_COLORS = { present: '#22c55e', late: '#f59e0b', absent: '#ff2b2b' };
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -423,8 +423,8 @@ export default function DashboardPage() {
             <AreaChart data={weeklyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="hoursGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#ff2b2b" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#ff2b2b" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#1f2937' : '#f3f4f6'} />
@@ -440,7 +440,7 @@ export default function DashboardPage() {
                 }}
                 formatter={v => [`${v}h`, 'Work Hours']}
               />
-              <Area type="monotone" dataKey="hours" stroke="#ef4444" strokeWidth={2} fill="url(#hoursGradient)" dot={{ r: 4, fill: '#ef4444', strokeWidth: 0 }} />
+              <Area type="monotone" dataKey="hours" stroke="#ff2b2b" strokeWidth={2} fill="url(#hoursGradient)" dot={{ r: 4, fill: '#ff2b2b', strokeWidth: 0 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
