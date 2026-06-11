@@ -165,8 +165,17 @@ export default function DashboardPage() {
   async function handleCheckIn() {
     if (!profile || !company) return;
     setCheckingIn(true);
-    const now = new Date().toISOString();
-    const status = new Date().getHours() > 9 ? 'late' : 'present';
+    // Custom schedule time check
+    let isLate = false;
+    const limitStr = company.in_time || '09:00';
+    const [limitHours, limitMins] = limitStr.split(':').map(Number);
+    const nowTime = new Date();
+    if (nowTime.getHours() > limitHours) {
+      isLate = true;
+    } else if (nowTime.getHours() === limitHours && nowTime.getMinutes() > limitMins) {
+      isLate = true;
+    }
+    const status = isLate ? 'late' : 'present';
 
     if (todayRecord) {
       await supabase.from('attendance').update({ check_in: now, status }).eq('id', todayRecord.id);

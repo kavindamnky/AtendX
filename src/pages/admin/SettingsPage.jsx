@@ -16,16 +16,34 @@ const INDUSTRIES = [
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 
+const THEME_OPTIONS = {
+  red: { colorBg: 'bg-red-500', activeBg: 'bg-red-950/40', activeBorder: 'border-red-500' },
+  blue: { colorBg: 'bg-blue-500', activeBg: 'bg-blue-900/40', activeBorder: 'border-blue-500' },
+  green: { colorBg: 'bg-green-500', activeBg: 'bg-green-900/40', activeBorder: 'border-green-500' },
+  indigo: { colorBg: 'bg-indigo-500', activeBg: 'bg-indigo-900/40', activeBorder: 'border-indigo-500' },
+  orange: { colorBg: 'bg-orange-500', activeBg: 'bg-orange-900/40', activeBorder: 'border-orange-500' },
+  violet: { colorBg: 'bg-violet-500', activeBg: 'bg-violet-900/40', activeBorder: 'border-violet-500' },
+  emerald: { colorBg: 'bg-emerald-500', activeBg: 'bg-emerald-900/40', activeBorder: 'border-emerald-500' },
+};
+
 export default function SettingsPage() {
   const { darkMode, company, setCompany, signOut } = useApp();
   const navigate = useNavigate();
 
+  const formatTimeInput = (timeStr) => {
+    if (!timeStr) return '';
+    return timeStr.slice(0, 5); // '09:00:00' -> '09:00'
+  };
+
   // Company form state
-  const [name,     setName]     = useState(company?.name     || '');
-  const [slug,     setSlug]     = useState(company?.slug     || '');
-  const [industry, setIndustry] = useState(company?.industry || '');
-  const [size,     setSize]     = useState(company?.size     || '');
-  const [logoUrl,  setLogoUrl]  = useState(company?.logo_url || '');
+  const [name,       setName]       = useState(company?.name       || '');
+  const [slug,       setSlug]       = useState(company?.slug       || '');
+  const [industry,   setIndustry]   = useState(company?.industry   || '');
+  const [size,       setSize]       = useState(company?.size       || '');
+  const [logoUrl,    setLogoUrl]    = useState(company?.logo_url    || '');
+  const [inTime,     setInTime]     = useState(formatTimeInput(company?.in_time)     || '09:00');
+  const [outTime,    setOutTime]    = useState(formatTimeInput(company?.out_time)    || '17:00');
+  const [colorTheme, setColorTheme] = useState(company?.color_theme || 'red');
 
   const [saving,       setSaving]       = useState(false);
   const [slugTaken,    setSlugTaken]    = useState(false);
@@ -98,14 +116,35 @@ export default function SettingsPage() {
 
     const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 
+    const updateData = {
+      name,
+      slug: cleanSlug,
+      industry,
+      size,
+      logo_url: logoUrl,
+      in_time: inTime,
+      out_time: outTime,
+      color_theme: colorTheme,
+    };
+
     const { error } = await supabase
       .from('companies')
-      .update({ name, slug: cleanSlug, industry, size, logo_url: logoUrl })
+      .update(updateData)
       .eq('id', company.id);
 
-    if (error) { setSaveError(error.message); setSaving(false); return; }
+    if (error) {
+      if (error.message?.includes('column') || error.code === 'PGRST204') {
+        setSaveError('Database schema is missing in_time, out_time, or color_theme columns. Run the SQL script from implementation_plan.md in your Supabase SQL Editor.');
+      } else {
+        setSaveError(error.message);
+      }
+      // Apply local context changes anyway to allow dynamic preview
+      setCompany({ ...company, ...updateData });
+      setSaving(false);
+      return;
+    }
 
-    setCompany({ ...company, name, slug: cleanSlug, industry, size, logo_url: logoUrl });
+    setCompany({ ...company, ...updateData });
     setSlug(cleanSlug);
     setSaveSuccess(true);
     setSaving(false);
@@ -262,6 +301,65 @@ export default function SettingsPage() {
                 <option value="">Select size</option>
                 {COMPANY_SIZES.map(s => <option key={s} value={s}>{s} employees</option>)}
               </select>
+            </div>
+
+            {/* Schedule configurations */}
+            <div className="sm:col-span-2 border-t border-gray-800/40 pt-4 mt-2">
+              <h3 className="font-semibold text-sm text-white">Attendance Schedule</h3>
+              <p className={`text-xs mt-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                Set the default office hours. Employees checking in after the Shift Start time will be marked as Late.
+              </p>
+            </div>
+
+            <div>
+              <label className={labelClass}>Shift Start (Check-In) Time</label>
+              <input
+                type="time"
+                value={inTime}
+                onChange={e => setInTime(e.target.value)}
+                className={inputClass}
+                required
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>Shift End (Check-Out) Time</label>
+              <input
+                type="time"
+                value={outTime}
+                onChange={e => setOutTime(e.target.value)}
+                className={inputClass}
+                required
+              />
+            </div>
+
+            {/* Visual themes */}
+            <div className="sm:col-span-2 border-t border-gray-800/40 pt-4 mt-2">
+              <h3 className="font-semibold text-sm text-white">Workspace Theme Color</h3>
+              <p className={`text-xs mb-3.5 mt-0.5 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                Select a theme color. This color will be applied across your dashboards, kiosks, and login pages.
+              </p>
+              <div className="flex flex-wrap gap-2.5">
+                {Object.keys(THEME_OPTIONS).map(themeKey => {
+                  const opt = THEME_OPTIONS[themeKey];
+                  const active = colorTheme === themeKey;
+                  return (
+                    <button
+                      key={themeKey}
+                      type="button"
+                      onClick={() => setColorTheme(themeKey)}
+                      className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold border transition cursor-pointer
+                        ${active
+                          ? `${opt.activeBg} ${opt.activeBorder} text-white`
+                          : `${darkMode ? 'bg-gray-800/80 border-gray-700 text-gray-400 hover:bg-gray-700 hover:text-white' : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}`}
+                    >
+                      <span className={`w-3 h-3 rounded-full shrink-0 ${opt.colorBg}`} />
+                      <span className="capitalize">{themeKey}</span>
+                      {active && <Check size={12} className="ml-0.5" />}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

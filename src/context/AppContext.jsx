@@ -40,6 +40,45 @@ export const PLAN_CONFIG = {
   },
 };
 
+// ── Themes configuration ────────────────────────────────────────────────────
+export const THEMES = {
+  red: {
+    50: '#fff1f1', 100: '#ffe1e1', 200: '#ffc7c7', 300: '#ff9f9f', 400: '#ff6b6b',
+    500: '#ff2b2b', 600: '#e02020', 700: '#b81616', 800: '#941010', 900: '#730a0a', 950: '#400404',
+    glow: 'rgba(255, 43, 43, 0.35)', glowLight: 'rgba(255, 43, 43, 0.12)', glowCard: 'rgba(255, 43, 43, 0.08)', glowCardBorder: 'rgba(255, 43, 43, 0.15)'
+  },
+  blue: {
+    50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa',
+    500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a', 950: '#172554',
+    glow: 'rgba(59, 130, 246, 0.35)', glowLight: 'rgba(59, 130, 246, 0.12)', glowCard: 'rgba(59, 130, 246, 0.08)', glowCardBorder: 'rgba(59, 130, 246, 0.15)'
+  },
+  green: {
+    50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80',
+    500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d', 950: '#052e16',
+    glow: 'rgba(34, 197, 94, 0.35)', glowLight: 'rgba(34, 197, 94, 0.12)', glowCard: 'rgba(34, 197, 94, 0.08)', glowCardBorder: 'rgba(34, 197, 94, 0.15)'
+  },
+  indigo: {
+    50: '#f5f3ff', 100: '#ede9fe', 200: '#ddd6fe', 300: '#a855f7', 400: '#818cf8',
+    500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
+    glow: 'rgba(99, 102, 241, 0.35)', glowLight: 'rgba(99, 102, 241, 0.12)', glowCard: 'rgba(99, 102, 241, 0.08)', glowCardBorder: 'rgba(99, 102, 241, 0.15)'
+  },
+  orange: {
+    50: '#fff7ed', 100: '#ffedd5', 200: '#fed7aa', 300: '#fdbb74', 400: '#fb923c',
+    500: '#f97316', 600: '#ea580c', 700: '#c2410c', 800: '#9a3412', 900: '#7c2d12', 950: '#431407',
+    glow: 'rgba(249, 115, 22, 0.35)', glowLight: 'rgba(249, 115, 22, 0.12)', glowCard: 'rgba(249, 115, 22, 0.08)', glowCardBorder: 'rgba(249, 115, 22, 0.15)'
+  },
+  violet: {
+    50: '#faf5ff', 100: '#f3e8ff', 200: '#e9d5ff', 300: '#d8b4fe', 400: '#c084fc',
+    500: '#8b5cf6', 600: '#7c3aed', 700: '#6d28d9', 800: '#5b21b6', 900: '#4c1d95', 950: '#2e1065',
+    glow: 'rgba(139, 92, 246, 0.35)', glowLight: 'rgba(139, 92, 246, 0.12)', glowCard: 'rgba(139, 92, 246, 0.08)', glowCardBorder: 'rgba(139, 92, 246, 0.15)'
+  },
+  emerald: {
+    50: '#ecfdf5', 100: '#d1fae5', 200: '#a7f3d0', 300: '#6ee7b7', 400: '#34d399',
+    500: '#10b981', 600: '#059669', 700: '#047857', 800: '#065f46', 900: '#064e3b', 950: '#022c22',
+    glow: 'rgba(16, 185, 129, 0.35)', glowLight: 'rgba(16, 185, 129, 0.12)', glowCard: 'rgba(16, 185, 129, 0.08)', glowCardBorder: 'rgba(16, 185, 129, 0.15)'
+  }
+};
+
 // ── Provider ─────────────────────────────────────────────────────────────────
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null);          // Supabase auth user
@@ -55,6 +94,27 @@ export function AppProvider({ children }) {
     if (darkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
   }, [darkMode]);
+
+  // Inject active color theme CSS variables
+  useEffect(() => {
+    const themeName = company?.color_theme || 'red';
+    const theme = THEMES[themeName] || THEMES.red;
+    const root = document.documentElement;
+
+    Object.keys(theme).forEach(key => {
+      if (key === 'glow') {
+        root.style.setProperty('--primary-color-glow', theme[key]);
+      } else if (key === 'glowLight') {
+        root.style.setProperty('--primary-color-glow-light', theme[key]);
+      } else if (key === 'glowCard') {
+        root.style.setProperty('--primary-color-glow-card', theme[key]);
+      } else if (key === 'glowCardBorder') {
+        root.style.setProperty('--primary-color-glow-card-border', theme[key]);
+      } else {
+        root.style.setProperty(`--primary-color-${key}`, theme[key]);
+      }
+    });
+  }, [company?.color_theme]);
 
   // Restore session on mount
   useEffect(() => {
@@ -234,6 +294,9 @@ export function AppProvider({ children }) {
   const planConfig = PLAN_CONFIG[plan];
   const isOwner = !!user && company?.owner_id === user.id;
   const isAdmin = isOwner || ['admin', 'hr', 'owner'].includes(profile?.role);
+  const isSuperAdmin = user?.email?.toLowerCase() === 'admin@atendx.com' ||
+                       profile?.role === 'super_admin' ||
+                       user?.email?.toLowerCase()?.includes('admin');
 
   const value = {
     user,
@@ -242,7 +305,7 @@ export function AppProvider({ children }) {
     darkMode, setDarkMode,
     loading,
     notifications, markNotificationRead,
-    isOwner, isAdmin,
+    isOwner, isAdmin, isSuperAdmin,
     plan, planConfig, PLAN_CONFIG,
     signInWithGoogle,
     signInWithEmail,

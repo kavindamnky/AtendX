@@ -147,11 +147,22 @@ export default function AttendancePage() {
         .eq('date', today)
         .maybeSingle();
 
-      let err;
+      // Custom schedule time check
+      let isLate = false;
+      const limitStr = company.in_time || '09:00';
+      const [limitHours, limitMins] = limitStr.split(':').map(Number);
+      const nowTime = new Date();
+      if (nowTime.getHours() > limitHours) {
+        isLate = true;
+      } else if (nowTime.getHours() === limitHours && nowTime.getMinutes() > limitMins) {
+        isLate = true;
+      }
+      const status = isLate ? 'late' : 'present';
+
       if (existing) {
         const { error } = await supabase.from('attendance').update({
           check_in: now,
-          status: new Date().getHours() > 9 ? 'late' : 'present',
+          status,
         }).eq('id', existing.id);
         err = error;
       } else {
@@ -160,7 +171,7 @@ export default function AttendancePage() {
           employee_id: targetEmployeeId,
           date: today,
           check_in: now,
-          status: new Date().getHours() > 9 ? 'late' : 'present',
+          status,
         });
         err = error;
       }

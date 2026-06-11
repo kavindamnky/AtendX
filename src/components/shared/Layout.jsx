@@ -4,7 +4,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, QrCode, Calendar, UtensilsCrossed, User,
   LogOut, Sun, Moon, Bell, Menu, X,
-  Building2, Users, BarChart3, Settings, CreditCard,
+  Building2, Users, BarChart3, Settings, CreditCard, ShieldCheck,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
@@ -29,7 +29,7 @@ export default function Layout({ children }) {
   const {
     profile, company, darkMode, setDarkMode,
     signOut, notifications, markNotificationRead,
-    isAdmin, plan, planConfig,
+    isAdmin, isSuperAdmin, plan, planConfig,
   } = useApp();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen]   = useState(false);
@@ -168,6 +168,25 @@ export default function Layout({ children }) {
                   {label}
                 </NavLink>
               ))}
+            </>
+          )}
+
+          {/* Super Admin section */}
+          {isSuperAdmin && (
+            <>
+              <div className={`text-xs font-semibold uppercase tracking-wider px-3 mt-4 mb-2 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`}>
+                Platform
+              </div>
+              <NavLink
+                to="/super-admin"
+                onClick={() => setSidebarOpen(false)}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition ${isActive ? activeClass : inactiveClass}`
+                }
+              >
+                <ShieldCheck size={18} className="text-amber-500" />
+                <span>Super Admin</span>
+              </NavLink>
             </>
           )}
         </nav>

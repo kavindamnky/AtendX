@@ -1,19 +1,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+:root {
+  --primary-color-50:  #fff1f1;
+  --primary-color-100: #ffe1e1;
+  --primary-color-200: #ffc7c7;
+  --primary-color-300: #ff9f9f;
+  --primary-color-400: #ff6b6b;
+  --primary-color-500: #ff2b2b;
+  --primary-color-600: #e02020;
+  --primary-color-700: #b81616;
+  --primary-color-800: #941010;
+  --primary-color-900: #730a0a;
+  --primary-color-950: #400404;
+  --primary-color-glow: rgba(255, 43, 43, 0.35);
+  --primary-color-glow-light: rgba(255, 43, 43, 0.12);
+  --primary-color-glow-card: rgba(255, 43, 43, 0.08);
+  --primary-color-glow-card-border: rgba(255, 43, 43, 0.15);
+}
+
 /* ── Brand color overrides ───────────────────────────────────────────────── */
 @theme {
-  --color-red-50:  #fff1f1;
-  --color-red-100: #ffe1e1;
-  --color-red-200: #ffc7c7;
-  --color-red-300: #ff9f9f;
-  --color-red-400: #ff6b6b;
-  --color-red-500: #ff2b2b;
-  --color-red-600: #e02020;
-  --color-red-700: #b81616;
-  --color-red-800: #941010;
-  --color-red-900: #730a0a;
-  --color-red-950: #400404;
+  --color-red-50:  var(--primary-color-50);
+  --color-red-100: var(--primary-color-100);
+  --color-red-200: var(--primary-color-200);
+  --color-red-300: var(--primary-color-300);
+  --color-red-400: var(--primary-color-400);
+  --color-red-500: var(--primary-color-500);
+  --color-red-600: var(--primary-color-600);
+  --color-red-700: var(--primary-color-700);
+  --color-red-800: var(--primary-color-800);
+  --color-red-900: var(--primary-color-900);
+  --color-red-950: var(--primary-color-950);
   --color-zinc-950: #101010;
   --color-gray-950: #101010;
   --color-white: #ffffff;
@@ -39,8 +57,8 @@ body {
 
 /* ── Premium landing page background ────────────────────────────────────── */
 .hero-bg {
-  background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255, 43, 43, 0.25) 0%, transparent 60%),
-              radial-gradient(ellipse 60% 40% at 80% 20%, rgba(184, 22, 22, 0.12) 0%, transparent 50%),
+  background: radial-gradient(ellipse 80% 60% at 50% -10%, var(--primary-color-glow) 0%, transparent 60%),
+              radial-gradient(ellipse 60% 40% at 80% 20%, var(--primary-color-glow-light) 0%, transparent 50%),
               #101010;
 }
 
@@ -68,7 +86,7 @@ body {
 
 /* ── Gradient text ───────────────────────────────────────────────────────── */
 .gradient-text {
-  background: linear-gradient(135deg, #ff2b2b 0%, #e02020 40%, #f97316 100%);
+  background: linear-gradient(135deg, var(--primary-color-500) 0%, var(--primary-color-600) 40%, var(--primary-color-400) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -83,20 +101,20 @@ body {
 
 /* ── Glow effects ────────────────────────────────────────────────────────── */
 .glow-red {
-  box-shadow: 0 0 40px rgba(220, 38, 38, 0.35), 0 0 80px rgba(220, 38, 38, 0.12);
+  box-shadow: 0 0 40px var(--primary-color-glow), 0 0 80px var(--primary-color-glow-light);
 }
 
 .glow-red-sm {
-  box-shadow: 0 4px 24px rgba(220, 38, 38, 0.40);
+  box-shadow: 0 4px 24px var(--primary-color-glow);
 }
 
 .glow-card {
-  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15), 0 8px 32px rgba(220, 38, 38, 0.08);
+  box-shadow: 0 0 0 1px var(--primary-color-glow-card-border), 0 8px 32px var(--primary-color-glow-card);
 }
 
 /* ── Animated gradient button ────────────────────────────────────────────── */
 .btn-gradient {
-  background: linear-gradient(135deg, #ff2b2b, #b81616, #ff2b2b);
+  background: linear-gradient(135deg, var(--primary-color-500), var(--primary-color-700), var(--primary-color-500));
   background-size: 200% 200%;
   animation: gradientShift 3s ease infinite;
   transition: opacity 0.2s, transform 0.15s;

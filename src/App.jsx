@@ -28,6 +28,7 @@ import EmployeesPage from './pages/admin/EmployeesPage';
 import SettingsPage from './pages/admin/SettingsPage';
 import BillingPage from './pages/admin/BillingPage';
 import AdminMealsPage from './pages/admin/AdminMealsPage';
+import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
 
 // ── Loading spinner ───────────────────────────────────────────────────────────
 function Spinner() {
@@ -66,6 +67,15 @@ function AdminRoute({ children }) {
   if (!user) return <Navigate to="/login" replace />;
   if (!company?.is_onboarded) return <Navigate to="/onboarding" replace />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  return <Layout>{children}</Layout>;
+}
+
+// ── Guard: requires super admin role ─────────────────────────────────────────
+function SuperAdminRoute({ children }) {
+  const { user, isSuperAdmin, loading } = useApp();
+  if (loading) return <Spinner />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!isSuperAdmin) return <Navigate to="/dashboard" replace />;
   return <Layout>{children}</Layout>;
 }
 
@@ -110,6 +120,9 @@ function AppRoutes() {
       <Route path="/admin/meals"        element={<AdminRoute><AdminMealsPage /></AdminRoute>} />
       <Route path="/admin/settings"     element={<AdminRoute><SettingsPage /></AdminRoute>} />
       <Route path="/admin/billing"      element={<AdminRoute><BillingPage /></AdminRoute>} />
+
+      {/* Super Admin */}
+      <Route path="/super-admin"        element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/" replace />} />

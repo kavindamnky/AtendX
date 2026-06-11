@@ -114,7 +114,7 @@ export default function EmployeesPage() {
       .from('profiles')
       .insert({
         company_id:  company.id,
-        email:       form.email,
+        email:       form.email.trim().toLowerCase(),
         full_name:   form.full_name,
         mobile:      form.mobile,
         national_id: form.national_id,
@@ -162,7 +162,7 @@ export default function EmployeesPage() {
       .from('profiles')
       .update({
         full_name:   editTarget.full_name,
-        email:       editTarget.email,
+        email:       editTarget.email ? editTarget.email.trim().toLowerCase() : '',
         mobile:      editTarget.mobile,
         national_id: editTarget.national_id,
         department:  editTarget.department,

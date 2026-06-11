@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 export default function EmployeeQRCheckPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { user, profile, company: appCompany, loading: appLoading } = useApp();
+  const { user, profile, setProfile, company: appCompany, setCompany: setAppContextCompany, loading: appLoading } = useApp();
 
   const [company, setCompany] = useState(null);
   const [companyLoading, setCompanyLoading] = useState(true);
@@ -20,6 +20,7 @@ export default function EmployeeQRCheckPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [successState, setSuccessState] = useState(null); // 'in' | 'out' | null
   const [time, setTime] = useState(new Date());
+  const [claimingProfile, setClaimingProfile] = useState(false);
 
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -42,6 +43,52 @@ export default function EmployeeQRCheckPage() {
       setLoadingRecord(false);
     }
   }, [user, profile, company]);
+
+  // Self-healing claim profile hook on direct QR scan page visit
+  useEffect(() => {
+    if (user && !profile && company && !appLoading && !companyLoading && !claimingProfile) {
+      attemptClaimProfile();
+    }
+  }, [user, profile, company, appLoading, companyLoading, claimingProfile]);
+
+  async function attemptClaimProfile() {
+    setClaimingProfile(true);
+    try {
+      const emailLower = user.email?.trim().toLowerCase();
+      // Look for profile matching email and company
+      const { data: prof, error } = await supabase
+        .from('profiles')
+        .select('*, companies(*)')
+        .eq('company_id', company.id)
+        .eq('email', emailLower)
+        .maybeSingle();
+
+      if (prof) {
+        if (!prof.auth_user_id) {
+          // Claim it!
+          const { data: claimed, error: claimErr } = await supabase
+            .from('profiles')
+            .update({ auth_user_id: user.id })
+            .eq('id', prof.id)
+            .select('*, companies(*)')
+            .single();
+
+          if (!claimErr && claimed) {
+            setProfile(claimed);
+            setAppContextCompany(claimed.companies);
+          }
+        } else if (prof.auth_user_id === user.id) {
+          // Already claimed but context didn't load it for some reason
+          setProfile(prof);
+          setAppContextCompany(prof.companies);
+        }
+      }
+    } catch (err) {
+      console.error('Error claiming profile on QR check page:', err);
+    } finally {
+      setClaimingProfile(false);
+    }
+  }
 
   async function fetchCompany() {
     setCompanyLoading(true);
@@ -80,7 +127,17 @@ export default function EmployeeQRCheckPage() {
     const now = new Date().toISOString();
 
     if (actionType === 'in') {
-      const isLate = new Date().getHours() > 9;
+      // Custom schedule time check
+      let isLate = false;
+      const limitStr = company.in_time || '09:00';
+      const [limitHours, limitMins] = limitStr.split(':').map(Number);
+      const nowTime = new Date();
+      if (nowTime.getHours() > limitHours) {
+        isLate = true;
+      } else if (nowTime.getHours() === limitHours && nowTime.getMinutes() > limitMins) {
+        isLate = true;
+      }
+
       const status = isLate ? 'late' : 'present';
 
       let err;
