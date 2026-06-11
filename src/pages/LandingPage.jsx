@@ -20,6 +20,7 @@ import {
   TrendingUp,
   Bell,
 } from 'lucide-react';
+import Plasma from '../components/shared/Plasma';
 
 // ─── PLAN CONFIG (mirrored from AppContext) ───────────────────────────────────
 const PLAN_CONFIG = {
@@ -208,60 +209,67 @@ function MockDashboard() {
 // ─── HERO SECTION ─────────────────────────────────────────────────────────────
 function Hero() {
   return (
-    <section className="hero-bg hero-grid min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center">
-      {/* Badge */}
-      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 mb-6 fade-in-up">
-        <Sparkles size={12} className="text-red-400" />
-        <span className="text-xs font-medium text-red-400">HR automation for modern businesses</span>
+    <section className="relative hero-bg hero-grid min-h-screen flex flex-col items-center justify-center px-4 pt-24 pb-16 text-center overflow-hidden">
+      {/* Plasma background */}
+      <div className="absolute inset-0 z-0 pointer-events-none opacity-40">
+        <Plasma color="#ef4444" speed={1.0} scale={1.2} opacity={0.65} mouseInteractive={true} />
       </div>
 
-      {/* Headline */}
-      <h1 className="fade-in-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.08] tracking-tight max-w-4xl mx-auto mb-6">
-        The HR Platform
-        <br />
-        <span className="gradient-text">Your Business Deserves</span>
-      </h1>
+      <div className="relative z-10 flex flex-col items-center justify-center">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 mb-6 fade-in-up">
+          <Sparkles size={12} className="text-red-400" />
+          <span className="text-xs font-medium text-red-400">HR automation for modern businesses</span>
+        </div>
 
-      {/* Subtitle */}
-      <p className="fade-in-up-2 text-lg text-gray-400 max-w-xl mx-auto mb-8 leading-relaxed">
-        Manage attendance with QR codes, streamline leave approvals, and track meal orders — all in one beautiful dashboard built for teams of every size.
-      </p>
+        {/* Headline */}
+        <h1 className="fade-in-up-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white leading-[1.08] tracking-tight max-w-4xl mx-auto mb-6">
+          The HR Platform
+          <br />
+          <span className="gradient-text">Your Business Deserves</span>
+        </h1>
 
-      {/* CTA buttons */}
-      <div className="fade-in-up-3 flex flex-col sm:flex-row items-center gap-4 mb-10">
-        <Link
-          to="/signup"
-          className="btn-gradient group flex items-center gap-2 text-white font-semibold px-7 py-3.5 rounded-xl text-sm shadow-lg shadow-red-500/20"
-        >
-          Start Free — No Credit Card
-          <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
-        </Link>
-        <a
-          href="#pricing"
-          className="flex items-center gap-2 text-sm text-gray-300 hover:text-white px-7 py-3.5 rounded-xl border border-white/10 hover:border-white/20 transition-all"
-        >
-          See Pricing <ChevronRight size={14} />
-        </a>
-      </div>
+        {/* Subtitle */}
+        <p className="fade-in-up-2 text-lg text-gray-400 max-w-xl mx-auto mb-8 leading-relaxed">
+          Manage attendance with QR codes, streamline leave approvals, and track meal orders — all in one beautiful dashboard built for teams of every size.
+        </p>
 
-      {/* Trust badges */}
-      <div className="fade-in-up-3 flex flex-col sm:flex-row items-center justify-center gap-6 mb-4">
-        {[
-          { icon: Building2, label: '500+ Companies' },
-          { icon: Users, label: '10K+ Employees Tracked' },
-          { icon: Zap, label: 'Free Plan Forever' },
-        ].map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-              <Icon size={11} className="text-red-400" />
+        {/* CTA buttons */}
+        <div className="fade-in-up-3 flex flex-col sm:flex-row items-center gap-4 mb-10">
+          <Link
+            to="/signup"
+            className="btn-gradient group flex items-center gap-2 text-white font-semibold px-7 py-3.5 rounded-xl text-sm shadow-lg shadow-red-500/20"
+          >
+            Start Free — No Credit Card
+            <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <a
+            href="#pricing"
+            className="flex items-center gap-2 text-sm text-gray-300 hover:text-white px-7 py-3.5 rounded-xl border border-white/10 hover:border-white/20 transition-all"
+          >
+            See Pricing <ChevronRight size={14} />
+          </a>
+        </div>
+
+        {/* Trust badges */}
+        <div className="fade-in-up-3 flex flex-col sm:flex-row items-center justify-center gap-6 mb-4">
+          {[
+            { icon: Building2, label: '500+ Companies' },
+            { icon: Users, label: '10K+ Employees Tracked' },
+            { icon: Zap, label: 'Free Plan Forever' },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
+                <Icon size={11} className="text-red-400" />
+              </div>
+              <span className="text-sm text-gray-400">{label}</span>
             </div>
-            <span className="text-sm text-gray-400">{label}</span>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Mock dashboard */}
-      <MockDashboard />
+        {/* Mock dashboard */}
+        <MockDashboard />
+      </div>
     </section>
   );
 }
