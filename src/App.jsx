@@ -21,6 +21,9 @@ import AttendancePage from './pages/AttendancePage';
 import LeavesPage from './pages/LeavesPage';
 import MealsPage from './pages/MealsPage';
 import ProfilePage from './pages/ProfilePage';
+import AssetsPage from './pages/AssetsPage';
+import PerformancePage from './pages/PerformancePage';
+import LearningPage from './pages/LearningPage';
 
 // Pages — admin
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -29,6 +32,12 @@ import SettingsPage from './pages/admin/SettingsPage';
 import BillingPage from './pages/admin/BillingPage';
 import AdminMealsPage from './pages/admin/AdminMealsPage';
 import SuperAdminDashboard from './pages/admin/SuperAdminDashboard';
+import AdminPayrollPage from './pages/admin/AdminPayrollPage';
+import AdminAssetsPage from './pages/admin/AdminAssetsPage';
+import AdminPerformancePage from './pages/admin/AdminPerformancePage';
+import AdminRecruitmentPage from './pages/admin/AdminRecruitmentPage';
+import AdminLearningPage from './pages/admin/AdminLearningPage';
+import PublicJobsPage from './pages/PublicJobsPage';
 
 // ── Loading spinner ───────────────────────────────────────────────────────────
 function Spinner() {
@@ -99,6 +108,7 @@ function AppRoutes() {
       <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
       <Route path="/signup" element={<PublicRoute><SignUpPage /></PublicRoute>} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      <Route path="/jobs" element={<PublicJobsPage />} />
 
       {/* Company-specific employee login & QR scan redirect landing */}
       <Route path="/company/:slug/login" element={<EmployeeLoginPage />} />
@@ -112,11 +122,19 @@ function AppRoutes() {
       <Route path="/attendance" element={<PrivateRoute><AttendancePage /></PrivateRoute>} />
       <Route path="/leaves"     element={<PrivateRoute><LeavesPage /></PrivateRoute>} />
       <Route path="/meals"      element={<PrivateRoute><MealsPage /></PrivateRoute>} />
+      <Route path="/assets"     element={<PrivateRoute><AssetsPage /></PrivateRoute>} />
+      <Route path="/performance" element={<PrivateRoute><PerformancePage /></PrivateRoute>} />
+      <Route path="/learning"   element={<PrivateRoute><LearningPage /></PrivateRoute>} />
       <Route path="/profile"    element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
       {/* Admin only */}
       <Route path="/admin"              element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/employees"    element={<AdminRoute><EmployeesPage /></AdminRoute>} />
+      <Route path="/admin/payroll"      element={<AdminRoute><AdminPayrollPage /></AdminRoute>} />
+      <Route path="/admin/assets"       element={<AdminRoute><AdminAssetsPage /></AdminRoute>} />
+      <Route path="/admin/performance"  element={<AdminRoute><AdminPerformancePage /></AdminRoute>} />
+      <Route path="/admin/recruitment"  element={<AdminRoute><AdminRecruitmentPage /></AdminRoute>} />
+      <Route path="/admin/learning"     element={<AdminRoute><AdminLearningPage /></AdminRoute>} />
       <Route path="/admin/meals"        element={<AdminRoute><AdminMealsPage /></AdminRoute>} />
       <Route path="/admin/settings"     element={<AdminRoute><SettingsPage /></AdminRoute>} />
       <Route path="/admin/billing"      element={<AdminRoute><BillingPage /></AdminRoute>} />

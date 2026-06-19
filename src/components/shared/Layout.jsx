@@ -5,6 +5,7 @@ import {
   LayoutDashboard, QrCode, Calendar, UtensilsCrossed, User,
   LogOut, Sun, Moon, Bell, Menu, X,
   Building2, Users, BarChart3, Settings, CreditCard, ShieldCheck,
+  Laptop, Award, BookOpen, Coins, Briefcase
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { supabase } from '../../lib/supabase';
@@ -14,12 +15,20 @@ const navItems = [
   { to: '/attendance', icon: QrCode,            label: 'Attendance' },
   { to: '/leaves',     icon: Calendar,          label: 'Leave Requests' },
   { to: '/meals',      icon: UtensilsCrossed,   label: 'Meal Orders' },
+  { to: '/assets',     icon: Laptop,            label: 'My Assets' },
+  { to: '/performance',icon: Award,             label: 'My Performance' },
+  { to: '/learning',   icon: BookOpen,          label: 'Learning Library' },
   { to: '/profile',    icon: User,              label: 'My Profile' },
 ];
 
 const adminItems = [
   { to: '/admin',           icon: BarChart3,   label: 'Admin Dashboard' },
   { to: '/admin/employees', icon: Users,        label: 'Employees' },
+  { to: '/admin/payroll',   icon: Coins,        label: 'Payroll & Tax' },
+  { to: '/admin/assets',     icon: Laptop,       label: 'Assets Tracking' },
+  { to: '/admin/performance',icon: Award,        label: 'Performance Reviews' },
+  { to: '/admin/recruitment',icon: Briefcase,    label: 'Recruitment (ATS)' },
+  { to: '/admin/learning',   icon: BookOpen,     label: 'Learning Manager' },
   { to: '/admin/meals',     icon: UtensilsCrossed, label: 'Meals Management' },
   { to: '/admin/settings',  icon: Settings,     label: 'Settings' },
   { to: '/admin/billing',   icon: CreditCard,   label: 'Billing & Plans' },

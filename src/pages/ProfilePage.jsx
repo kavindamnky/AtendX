@@ -3,11 +3,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Camera, Download, Edit3, Save, QrCode, Hash, Phone, Mail,
   Building, User, Calendar, Shield, Copy, Check, Link2, ExternalLink,
+  Coins, FileText, Printer, AlertTriangle, Loader2
 } from 'lucide-react';
 import QRCode from 'qrcode';
 import { supabase } from '../lib/supabase';
 import { useApp } from '../context/AppContext';
 import { uploadProfilePhoto, validateProfilePhoto } from '../lib/profilePhotos';
+import { format } from 'date-fns';
 
 const DEFAULT_DEPARTMENTS = [
   'SALON MOONLIGHT',
@@ -30,6 +32,33 @@ export default function ProfilePage() {
   const [departments, setDepartments] = useState([]);
   const [copied, setCopied] = useState(false);
   const qrCanvasRef = useRef(null);
+
+  const [payslips, setPayslips] = useState([]);
+  const [selectedPayslip, setSelectedPayslip] = useState(null);
+  const [payslipLoading, setPayslipLoading] = useState(true);
+  const [dbUpdatesNeeded, setDbUpdatesNeeded] = useState(false);
+
+  useEffect(() => {
+    if (!profile?.id || !company?.id) return;
+    setPayslipLoading(true);
+    supabase
+      .from('employee_payslips')
+      .select('*, payroll_runs(payroll_month)')
+      .eq('employee_id', profile.id)
+      .eq('company_id', company.id)
+      .order('created_at', { ascending: false })
+      .then(({ data, error: err }) => {
+        if (err) {
+          if (err.code === '42P01') {
+            setDbUpdatesNeeded(true);
+          }
+          console.error(err);
+        } else {
+          setPayslips(data || []);
+        }
+        setPayslipLoading(false);
+      });
+  }, [profile?.id, company?.id]);
 
   const loginUrl = company
     ? `${window.location.origin}/company/${company.slug}/login`
@@ -362,6 +391,188 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Payslips Card */}
+      <div className={card}>
+        <h2 className="font-semibold mb-4 flex items-center gap-2 text-sm uppercase tracking-wider text-gray-400">
+          <Coins size={16} className="text-red-500" />
+          My Payslips
+        </h2>
+        
+        {dbUpdatesNeeded ? (
+          <div className="text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl flex items-center gap-1.5">
+            <AlertTriangle size={14} />
+            <span>Payslip database tables are pending setup.</span>
+          </div>
+        ) : payslipLoading ? (
+          <div className="flex justify-center items-center py-6">
+            <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
+          </div>
+        ) : payslips.length === 0 ? (
+          <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+            No payslips issued yet for your profile.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {payslips.map(slip => {
+              const monthLabel = slip.payroll_runs?.payroll_month
+                ? format(new Date(slip.payroll_runs.payroll_month), 'MMMM yyyy')
+                : format(new Date(slip.created_at), 'MMMM yyyy');
+                
+              return (
+                <div 
+                  key={slip.id} 
+                  className={`flex justify-between items-center p-3 rounded-xl border text-sm ${
+                    darkMode ? 'bg-gray-950/40 border-gray-800' : 'bg-gray-50 border-gray-200 shadow-sm'
+                  }`}
+                >
+                  <div>
+                    <div className="font-semibold text-white">{monthLabel}</div>
+                    <span className="text-xs text-gray-500 font-mono">Net: LKR {slip.net_pay.toLocaleString()}</span>
+                  </div>
+                  
+                  <button
+                    onClick={() => setSelectedPayslip(slip)}
+                    className="text-red-500 hover:text-red-400 text-xs font-semibold flex items-center gap-0.5"
+                  >
+                    <FileText size={14} />
+                    View Slip
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Selected Payslip Detail Modal */}
+      {selectedPayslip && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white text-gray-900 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl p-8 relative print:p-0 print:shadow-none print:rounded-none">
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedPayslip(null)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 print:hidden text-2xl font-bold font-sans"
+            >
+              &times;
+            </button>
+            
+            {/* Print action header */}
+            <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-100 print:hidden">
+              <span className="text-sm font-semibold text-gray-500">My Payslip Preview</span>
+              <button
+                onClick={() => window.print()}
+                className="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 shadow animate-pulse"
+              >
+                <Printer size={16} />
+                Print Payslip
+              </button>
+            </div>
+            
+            {/* Details */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-red-600">{company?.name || 'AtendX'}</h2>
+                  <p className="text-xs text-gray-500 mt-1">HR & Attendance Platform Workspace</p>
+                </div>
+                <div className="text-right">
+                  <h3 className="text-lg font-bold text-gray-800">PAYSLIP</h3>
+                  <p className="text-sm text-gray-600 font-medium mt-1">
+                    Month: {selectedPayslip.payroll_runs?.payroll_month
+                      ? format(new Date(selectedPayslip.payroll_runs.payroll_month), 'MMMM yyyy')
+                      : format(new Date(selectedPayslip.created_at), 'MMMM yyyy')}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 border-y border-gray-100 py-4 text-sm">
+                <div>
+                  <div className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Employee Details</div>
+                  <div className="font-bold text-gray-800 mt-1">{profile?.full_name}</div>
+                  <div className="text-gray-600 text-xs mt-0.5">ID: {profile?.employee_id || 'N/A'}</div>
+                  <div className="text-gray-600 text-xs">Department: {profile?.department || 'N/A'}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-gray-500 text-xs uppercase tracking-wider font-semibold">Slip Reference</div>
+                  <div className="text-gray-700 mt-1">Slip ID: {selectedPayslip.id.slice(0, 8).toUpperCase()}</div>
+                  <div className="text-gray-600 text-xs mt-0.5">Issued: {format(new Date(selectedPayslip.created_at), 'yyyy-MM-dd')}</div>
+                </div>
+              </div>
+
+              {/* Earnings & Deductions Tables */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                {/* Earnings */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-1.5 uppercase text-xs tracking-wider">Earnings</h4>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">Basic Salary</span>
+                    <span className="font-semibold text-gray-800 font-mono">LKR {selectedPayslip.basic_salary.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">Allowances</span>
+                    <span className="font-semibold text-gray-800 font-mono">LKR {selectedPayslip.allowances.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-dashed border-gray-200 pt-2 font-bold">
+                    <span className="text-gray-800">Gross Earnings</span>
+                    <span className="font-mono">LKR {(selectedPayslip.basic_salary + selectedPayslip.allowances).toLocaleString()}</span>
+                  </div>
+                </div>
+                
+                {/* Deductions */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-800 border-b border-gray-100 pb-1.5 uppercase text-xs tracking-wider">Deductions</h4>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">EPF Employee (8%)</span>
+                    <span className="font-semibold text-red-600 font-mono">LKR {selectedPayslip.epf_employee.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">APIT (PAYE Tax)</span>
+                    <span className="font-semibold text-red-600 font-mono">LKR {selectedPayslip.apit_tax.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-gray-600">Other Deductions</span>
+                    <span className="font-semibold text-red-600 font-mono">LKR {selectedPayslip.deductions.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-dashed border-gray-200 pt-2 font-bold">
+                    <span className="text-gray-800">Total Deductions</span>
+                    <span className="text-red-600 font-mono">
+                      LKR {(selectedPayslip.epf_employee + selectedPayslip.apit_tax + selectedPayslip.deductions).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Net Pay Box */}
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex justify-between items-center text-emerald-800">
+                <div>
+                  <span className="text-xs uppercase tracking-wider font-bold text-emerald-600">Net Take Home Pay</span>
+                  <p className="text-[10px] text-emerald-500 mt-0.5">Direct Deposit to registered Bank Account</p>
+                </div>
+                <span className="text-2xl font-bold font-mono">LKR {selectedPayslip.net_pay.toLocaleString()}</span>
+              </div>
+              
+              {/* Employer Contributions */}
+              <div className="border-t border-gray-100 pt-4 space-y-2 text-xs text-gray-500">
+                <div className="font-bold uppercase tracking-wider text-gray-400 mb-1">Employer Statutory Contributions (Not Deducted)</div>
+                <div className="flex justify-between">
+                  <span>EPF Employer (12%)</span>
+                  <span className="font-mono">LKR {selectedPayslip.epf_employer.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ETF Employer (3%)</span>
+                  <span className="font-mono">LKR {selectedPayslip.etf_employer.toLocaleString()}</span>
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="text-center text-[10px] text-gray-400 pt-8 border-t border-gray-100">
+                This is a system generated document and does not require a physical signature. AtendX Payroll Management System.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
